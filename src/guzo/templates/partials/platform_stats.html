@@ -1,0 +1,45 @@
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="card-apple p-6">
+        <span class="text-apple-gray-500 text-sm">Total Revenue</span>
+        <p class="text-3xl font-bold text-apple-gray-900 mt-2">{{ stats.total_revenue|round(2) }} <span class="text-lg font-normal text-apple-gray-500">ETB</span></p>
+    </div>
+    
+    <div class="card-apple p-6">
+        <span class="text-apple-gray-500 text-sm">Total Bookings</span>
+        <p class="text-3xl font-bold text-apple-gray-900 mt-2">{{ stats.total_bookings }}</p>
+        <p class="text-sm text-green-500 mt-1">{{ stats.completed_bookings }} completed</p>
+    </div>
+    
+    <div class="card-apple p-6">
+        <span class="text-apple-gray-500 text-sm">Active Users</span>
+        <p class="text-3xl font-bold text-apple-gray-900 mt-2">{{ stats.active_users }}</p>
+        <p class="text-sm text-apple-gray-500 mt-1">of {{ stats.total_users }} total</p>
+    </div>
+    
+    <div class="card-apple p-6">
+        <span class="text-apple-gray-500 text-sm">Completion Rate</span>
+        <p class="text-3xl font-bold text-apple-gray-900 mt-2">{{ stats.booking_completion_rate }}%</p>
+    </div>
+</div>
+
+<!-- Secondary Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="card-apple p-4">
+        <span class="text-apple-gray-500 text-xs">New Users</span>
+        <p class="text-xl font-semibold text-apple-gray-900">{{ stats.new_users }}</p>
+    </div>
+    <div class="card-apple p-4">
+        <span class="text-apple-gray-500 text-xs">Total Drivers</span>
+        <p class="text-xl font-semibold text-apple-gray-900">{{ stats.total_drivers }}</p>
+    </div>
+    <div class="card-apple p-4">
+        <span class="text-apple-gray-500 text-xs">Avg Booking Value</span>
+        <p class="text-xl font-semibold text-apple-gray-900">{{ stats.avg_booking_value }} ETB</p>
+    </div>
+    <div class="card-apple p-4">
+        <span class="text-apple-gray-500 text-xs">Avg Driver Rating</span>
+        <p class="text-xl font-semibold text-apple-gray-900">{{ stats.avg_driver_rating }} ★</p>
+    </div>
+</div>
+

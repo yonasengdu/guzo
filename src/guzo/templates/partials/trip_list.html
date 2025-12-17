@@ -1,0 +1,79 @@
+{% if trips %}
+<div class="flex items-center justify-between mb-6">
+    <p class="text-apple-gray-400">{{ trips|length }} trip{% if trips|length != 1 %}s{% endif %} found</p>
+</div>
+
+<div class="space-y-4">
+    {% for trip in trips %}
+    <a href="/customer/trip/{{ trip.id }}" class="card-apple p-6 block hover:shadow-apple-lg transition-all duration-300">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-6">
+            <!-- Route -->
+            <div class="flex-1">
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="flex-1">
+                        <p class="text-xl font-semibold text-apple-gray-600">{{ trip.origin }}</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-apple-gray-300">
+                        <div class="w-8 border-t border-dashed border-apple-gray-300"></div>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                        <div class="w-8 border-t border-dashed border-apple-gray-300"></div>
+                    </div>
+                    <div class="flex-1 text-right">
+                        <p class="text-xl font-semibold text-apple-gray-600">{{ trip.destination }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-6 text-sm text-apple-gray-400">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>{{ trip.departure_time.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>{{ trip.departure_time.strftime('%H:%M') }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>{{ trip.remaining_seats }} seat{% if trip.remaining_seats != 1 %}s{% endif %} left</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Price -->
+            <div class="flex items-center gap-6">
+                <div class="text-right">
+                    <p class="text-3xl font-semibold text-apple-gray-600">{{ trip.price_per_seat|int }}</p>
+                    <p class="text-sm text-apple-gray-400">ETB / seat</p>
+                </div>
+                <div class="w-10 h-10 bg-apple-gray-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card-apple p-12 text-center">
+    <div class="w-16 h-16 bg-apple-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+    </div>
+    <h3 class="text-lg font-medium text-apple-gray-600 mb-2">No trips found</h3>
+    <p class="text-apple-gray-400 mb-6">Try adjusting your search filters or check back later</p>
+    <a href="/customer" class="btn-apple btn-apple-secondary">
+        Request a Charter
+    </a>
+</div>
+{% endif %}

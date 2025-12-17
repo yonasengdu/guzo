@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Guzo - Travel Across Ethiopia{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative overflow-hidden">
+    <!-- Background gradient -->
+    <div class="absolute inset-0 bg-gradient-to-b from-apple-gray-50 to-white"></div>
+    
+    <div class="relative max-w-6xl mx-auto px-6 pt-20 pb-32">
+        <div class="text-center max-w-3xl mx-auto">
+            <!-- Badge -->
+            <div class="inline-flex items-center gap-2 px-4 py-2 bg-apple-blue/10 rounded-full mb-8">
+                <span class="w-2 h-2 bg-apple-green rounded-full animate-pulse"></span>
+                <span class="text-sm font-medium text-apple-blue">Now available in 24 cities</span>
+            </div>
+            
+            <!-- Headline -->
+            <h1 class="text-5xl sm:text-6xl lg:text-7xl font-semibold text-apple-gray-600 tracking-tight leading-tight mb-6">
+                Travel Ethiopia<br>
+                <span class="text-apple-gray-400">with ease.</span>
+            </h1>
+            
+            <!-- Subheadline -->
+            <p class="text-xl text-apple-gray-400 max-w-xl mx-auto mb-10 leading-relaxed">
+                Book affordable shared rides or charter a private car. Safe, reliable, and comfortable travel between cities.
+            </p>
+            
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="/customer/search" class="btn-apple btn-apple-primary w-full sm:w-auto">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    Find a Ride
+                </a>
+                {% if not user %}
+                <a href="/signup?role=driver" class="btn-apple btn-apple-secondary w-full sm:w-auto">
+                    Become a Driver
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-20">
+            <div class="text-center">
+                <p class="text-3xl font-semibold text-apple-gray-600">50K+</p>
+                <p class="text-sm text-apple-gray-400 mt-1">Happy Riders</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-semibold text-apple-gray-600">2K+</p>
+                <p class="text-sm text-apple-gray-400 mt-1">Verified Drivers</p>
+            </div>
+            <div class="text-center">
+                <p class="text-3xl font-semibold text-apple-gray-600">24</p>
+                <p class="text-sm text-apple-gray-400 mt-1">Cities Covered</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Search Section -->
+<section class="py-16 bg-white">
+    <div class="max-w-4xl mx-auto px-6">
+        <div class="card-apple p-8">
+            <h2 class="text-2xl font-semibold text-apple-gray-600 mb-6 text-center">Where would you like to go?</h2>
+            
+            <form action="/customer/search" method="get" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-apple-gray-500 mb-2">From</label>
+                        <select name="origin" class="select-apple">
+                            <option value="">Select departure city</option>
+                            <option value="Addis Ababa">Addis Ababa</option>
+                            <option value="Adama">Adama (Nazret)</option>
+                            <option value="Bahir Dar">Bahir Dar</option>
+                            <option value="Dire Dawa">Dire Dawa</option>
+                            <option value="Gondar">Gondar</option>
+                            <option value="Hawassa">Hawassa</option>
+                            <option value="Mekelle">Mekelle</option>
+                            <option value="Jimma">Jimma</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-apple-gray-500 mb-2">To</label>
+                        <select name="destination" class="select-apple">
+                            <option value="">Select destination</option>
+                            <option value="Addis Ababa">Addis Ababa</option>
+                            <option value="Adama">Adama (Nazret)</option>
+                            <option value="Bahir Dar">Bahir Dar</option>
+                            <option value="Dire Dawa">Dire Dawa</option>
+                            <option value="Gondar">Gondar</option>
+                            <option value="Hawassa">Hawassa</option>
+                            <option value="Mekelle">Mekelle</option>
+                            <option value="Jimma">Jimma</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-apple-gray-500 mb-2">Date</label>
+                        <input type="date" name="date" class="input-apple">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-apple-gray-500 mb-2">Passengers</label>
+                        <select name="seats" class="select-apple">
+                            <option value="1">1 passenger</option>
+                            <option value="2">2 passengers</option>
+                            <option value="3">3 passengers</option>
+                            <option value="4">4 passengers</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-apple btn-apple-primary w-full mt-4">
+                    Search Available Rides
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Available Trips Section -->
+{% if trips %}
+<section class="py-20 bg-apple-gray-50">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-semibold text-apple-gray-600 mb-3">Upcoming Trips</h2>
+            <p class="text-apple-gray-400">Book your seat on these available rides</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for trip in trips %}
+            <a href="/customer/trip/{{ trip.id }}" class="card-apple p-6 hover:shadow-apple-lg transition-all duration-300 group">
+                <!-- Route -->
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex-1">
+                        <p class="font-semibold text-apple-gray-600">{{ trip.origin }}</p>
+                        <p class="text-sm text-apple-gray-400">Departure</p>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-apple-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 text-right">
+                        <p class="font-semibold text-apple-gray-600">{{ trip.destination }}</p>
+                        <p class="text-sm text-apple-gray-400">Arrival</p>
+                    </div>
+                </div>
+                
+                <!-- Divider -->
+                <div class="border-t border-apple-gray-100 my-4"></div>
+                
+                <!-- Details -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-apple-gray-400">{{ trip.departure_time.strftime('%b %d, %H:%M') }}</p>
+                        <p class="text-sm text-apple-gray-400">{{ trip.remaining_seats }} seats left</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-semibold text-apple-gray-600">{{ trip.price_per_seat|int }}</p>
+                        <p class="text-sm text-apple-gray-400">ETB/seat</p>
+                    </div>
+                </div>
+                
+                <!-- Hover indicator -->
+                <div class="mt-4 flex items-center justify-center text-apple-blue opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span class="text-sm font-medium">View Details</span>
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-10">
+            <a href="/customer/search" class="btn-apple btn-apple-secondary">
+                View All Trips
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Features Section -->
+<section class="py-20 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-semibold text-apple-gray-600 mb-3">Why Choose Guzo</h2>
+            <p class="text-apple-gray-400 max-w-xl mx-auto">The smarter way to travel between Ethiopian cities</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="text-center p-8">
+                <div class="w-16 h-16 bg-apple-blue/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8 text-apple-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-apple-gray-600 mb-3">Affordable Prices</h3>
+                <p class="text-apple-gray-400 leading-relaxed">Share rides with others and split the cost. Save up to 60% compared to private transport.</p>
+            </div>
+            
+            <!-- Feature 2 -->
+            <div class="text-center p-8">
+                <div class="w-16 h-16 bg-apple-green/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8 text-apple-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-apple-gray-600 mb-3">Safe & Verified</h3>
+                <p class="text-apple-gray-400 leading-relaxed">All drivers are verified with ID checks. Every trip is tracked for your safety.</p>
+            </div>
+            
+            <!-- Feature 3 -->
+            <div class="text-center p-8">
+                <div class="w-16 h-16 bg-apple-orange/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8 text-apple-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-apple-gray-600 mb-3">Flexible Booking</h3>
+                <p class="text-apple-gray-400 leading-relaxed">Book instantly or schedule ahead. Cancel anytime with free cancellation policy.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-20 bg-apple-gray-50">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+        <h2 class="text-3xl font-semibold text-apple-gray-600 mb-4">Ready to start your journey?</h2>
+        <p class="text-apple-gray-400 mb-8 max-w-xl mx-auto">Join thousands of travelers who trust Guzo for their intercity transportation needs.</p>
+        
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            {% if user %}
+                <a href="/customer/search" class="btn-apple btn-apple-primary">
+                    Find Your Next Ride
+                </a>
+            {% else %}
+                <a href="/signup" class="btn-apple btn-apple-primary">
+                    Create Free Account
+                </a>
+                <a href="/login" class="btn-apple btn-apple-secondary">
+                    Sign In
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

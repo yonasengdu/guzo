@@ -1,0 +1,84 @@
+<div class="space-y-4">
+    {% if verification %}
+    <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
+        <div>
+            <span class="text-apple-gray-700">Verification Status</span>
+        </div>
+        <div>
+            {% if verification.status.value == 'approved' %}
+            <span class="badge-apple badge-success">Verified</span>
+            {% elif verification.status.value == 'pending' %}
+            <span class="badge-apple badge-warning">Pending Review</span>
+            {% elif verification.status.value == 'under_review' %}
+            <span class="badge-apple badge-info">Under Review</span>
+            {% elif verification.status.value == 'rejected' %}
+            <span class="badge-apple badge-error">Rejected</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if verification.status.value == 'rejected' %}
+    <div class="p-4 bg-red-50 rounded-xl">
+        <p class="text-sm text-red-700 font-medium">Rejection Reason:</p>
+        <p class="text-sm text-red-600">{{ verification.rejection_reason }}</p>
+    </div>
+    {% endif %}
+    
+    <!-- Documents Status -->
+    <div class="space-y-2">
+        <div class="flex items-center justify-between p-3 bg-apple-gray-50 rounded-lg">
+            <span class="text-sm text-apple-gray-600">Profile Photo</span>
+            {% if verification.profile_photo %}
+            <span class="text-green-500">✓ Uploaded</span>
+            {% else %}
+            <span class="text-apple-gray-400">Not uploaded</span>
+            {% endif %}
+        </div>
+        
+        <div class="flex items-center justify-between p-3 bg-apple-gray-50 rounded-lg">
+            <span class="text-sm text-apple-gray-600">Driver's License</span>
+            {% if verification.license_document %}
+            <span class="text-green-500">✓ Uploaded</span>
+            {% else %}
+            <span class="text-apple-gray-400">Not uploaded</span>
+            {% endif %}
+        </div>
+        
+        <div class="flex items-center justify-between p-3 bg-apple-gray-50 rounded-lg">
+            <span class="text-sm text-apple-gray-600">Vehicle Registration</span>
+            {% if verification.vehicle_registration %}
+            <span class="text-green-500">✓ Uploaded</span>
+            {% else %}
+            <span class="text-apple-gray-400">Not uploaded</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if verification.status.value in ['pending', 'rejected'] %}
+    <button 
+        class="btn-primary w-full"
+        hx-get="/verification/form"
+        hx-target="#verification-form-container"
+        hx-swap="innerHTML"
+    >
+        {% if verification.status.value == 'rejected' %}Resubmit Documents{% else %}Update Documents{% endif %}
+    </button>
+    {% endif %}
+    
+    {% else %}
+    <div class="text-center py-8">
+        <p class="text-apple-gray-500 mb-4">You haven't started the verification process yet.</p>
+        <button 
+            class="btn-primary"
+            hx-get="/verification/form"
+            hx-target="#verification-form-container"
+            hx-swap="innerHTML"
+        >
+            Start Verification
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<div id="verification-form-container"></div>
+

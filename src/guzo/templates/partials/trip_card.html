@@ -1,0 +1,41 @@
+<a href="/customer/trip/{{ trip.id }}" class="card-apple p-6 hover:shadow-apple-lg transition-all duration-300 group">
+    <!-- Route -->
+    <div class="flex items-center gap-3 mb-4">
+        <div class="flex-1">
+            <p class="font-semibold text-apple-gray-600">{{ trip.origin }}</p>
+            <p class="text-sm text-apple-gray-400">Departure</p>
+        </div>
+        <div class="flex-shrink-0">
+            <svg class="w-5 h-5 text-apple-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+        </div>
+        <div class="flex-1 text-right">
+            <p class="font-semibold text-apple-gray-600">{{ trip.destination }}</p>
+            <p class="text-sm text-apple-gray-400">Arrival</p>
+        </div>
+    </div>
+    
+    <!-- Divider -->
+    <div class="border-t border-apple-gray-100 my-4"></div>
+    
+    <!-- Details -->
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-sm text-apple-gray-400">{{ trip.departure_time.strftime('%b %d, %H:%M') }}</p>
+            <p class="text-sm text-apple-gray-400">{{ trip.remaining_seats }} seats left</p>
+        </div>
+        <div class="text-right">
+            <p class="text-2xl font-semibold text-apple-gray-600">{{ trip.price_per_seat|int }}</p>
+            <p class="text-sm text-apple-gray-400">ETB/seat</p>
+        </div>
+    </div>
+    
+    <!-- Hover indicator -->
+    <div class="mt-4 flex items-center justify-center text-apple-blue opacity-0 group-hover:opacity-100 transition-opacity">
+        <span class="text-sm font-medium">View Details</span>
+        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+    </div>
+</a>

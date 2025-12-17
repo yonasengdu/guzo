@@ -1,0 +1,232 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Favorites - Guzo{% endblock %}
+
+{% block dashboard_content %}
+<!-- Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-semibold text-apple-gray-600">Favorites</h1>
+    <p class="text-apple-gray-400 mt-1">Your saved routes and preferred drivers</p>
+</div>
+
+<!-- Tabs -->
+<div class="flex gap-4 mb-6">
+    <button 
+        class="px-6 py-3 rounded-xl text-sm font-medium transition-all bg-apple-blue text-white"
+        id="routes-tab"
+        onclick="showTab('routes')"
+    >
+        Saved Routes
+    </button>
+    <button 
+        class="px-6 py-3 rounded-xl text-sm font-medium transition-all bg-apple-gray-100 text-apple-gray-600 hover:bg-apple-gray-200"
+        id="drivers-tab"
+        onclick="showTab('drivers')"
+    >
+        Favorite Drivers
+    </button>
+</div>
+
+<!-- Routes Content -->
+<div id="routes-content">
+    <div class="card-apple p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-apple-gray-600">Saved Routes</h2>
+            <button 
+                onclick="document.getElementById('add-route-modal').classList.remove('hidden')"
+                class="btn-apple btn-apple-secondary !py-2 !px-4 text-sm"
+            >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Route
+            </button>
+        </div>
+        
+        {% if favorite_routes %}
+        <div class="space-y-3">
+            {% for route in favorite_routes %}
+            <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-apple-blue/10 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-apple-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium text-apple-gray-600">{{ route.origin }} → {{ route.destination }}</p>
+                        <p class="text-sm text-apple-gray-400">Added {{ route.created_at.strftime('%b %d, %Y') }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/customer/search?origin={{ route.origin }}&destination={{ route.destination }}" 
+                       class="btn-apple btn-apple-primary !py-2 !px-4 text-sm">
+                        Search
+                    </a>
+                    <button 
+                        hx-delete="/customer/favorite/route/{{ route.id }}"
+                        hx-target="closest div.flex"
+                        hx-swap="outerHTML"
+                        hx-confirm="Remove this route from favorites?"
+                        class="text-apple-gray-400 hover:text-apple-red transition-colors"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <svg class="w-12 h-12 text-apple-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            </svg>
+            <p class="text-apple-gray-400">No saved routes yet</p>
+            <p class="text-sm text-apple-gray-400 mt-1">Save your frequent routes for quick access</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Drivers Content -->
+<div id="drivers-content" class="hidden">
+    <div class="card-apple p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-apple-gray-600">Favorite Drivers</h2>
+        </div>
+        
+        {% if favorite_drivers %}
+        <div class="space-y-3">
+            {% for fav in favorite_drivers %}
+            <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-apple-gray-200 rounded-full flex items-center justify-center">
+                        {% if fav.driver_name %}
+                        <span class="text-lg font-medium text-apple-gray-600">{{ fav.driver_name[0] }}</span>
+                        {% else %}
+                        <svg class="w-6 h-6 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="font-medium text-apple-gray-600">{{ fav.driver_name or 'Driver' }}</p>
+                        <div class="flex items-center gap-2">
+                            {% if fav.driver_rating %}
+                            <span class="text-yellow-500">★</span>
+                            <span class="text-sm text-apple-gray-400">{{ fav.driver_rating }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <button 
+                    hx-delete="/customer/favorite/driver/{{ fav.driver_id }}"
+                    hx-target="closest div.flex"
+                    hx-swap="outerHTML"
+                    hx-confirm="Remove this driver from favorites?"
+                    class="text-apple-gray-400 hover:text-apple-red transition-colors"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <svg class="w-12 h-12 text-apple-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+            <p class="text-apple-gray-400">No favorite drivers yet</p>
+            <p class="text-sm text-apple-gray-400 mt-1">Mark drivers as favorites after your trips</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Route Modal -->
+<div id="add-route-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+        <div class="p-6 border-b border-apple-gray-100">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-apple-gray-600">Add Favorite Route</h2>
+                <button onclick="document.getElementById('add-route-modal').classList.add('hidden')" class="text-apple-gray-400 hover:text-apple-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <form hx-post="/customer/favorite/route" hx-swap="none" hx-on::after-request="location.reload()" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">From</label>
+                <select name="origin" class="select-apple" required>
+                    <option value="">Select origin</option>
+                    <option value="Addis Ababa">Addis Ababa</option>
+                    <option value="Adama">Adama</option>
+                    <option value="Bahir Dar">Bahir Dar</option>
+                    <option value="Dire Dawa">Dire Dawa</option>
+                    <option value="Gondar">Gondar</option>
+                    <option value="Hawassa">Hawassa</option>
+                    <option value="Mekelle">Mekelle</option>
+                    <option value="Jimma">Jimma</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">To</label>
+                <select name="destination" class="select-apple" required>
+                    <option value="">Select destination</option>
+                    <option value="Addis Ababa">Addis Ababa</option>
+                    <option value="Adama">Adama</option>
+                    <option value="Bahir Dar">Bahir Dar</option>
+                    <option value="Dire Dawa">Dire Dawa</option>
+                    <option value="Gondar">Gondar</option>
+                    <option value="Hawassa">Hawassa</option>
+                    <option value="Mekelle">Mekelle</option>
+                    <option value="Jimma">Jimma</option>
+                </select>
+            </div>
+            
+            <div class="pt-4 flex gap-3">
+                <button type="button" onclick="document.getElementById('add-route-modal').classList.add('hidden')" class="btn-apple btn-apple-secondary flex-1">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-apple btn-apple-primary flex-1">
+                    Save Route
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showTab(tab) {
+    const routesContent = document.getElementById('routes-content');
+    const driversContent = document.getElementById('drivers-content');
+    const routesTab = document.getElementById('routes-tab');
+    const driversTab = document.getElementById('drivers-tab');
+    
+    if (tab === 'routes') {
+        routesContent.classList.remove('hidden');
+        driversContent.classList.add('hidden');
+        routesTab.classList.remove('bg-apple-gray-100', 'text-apple-gray-600');
+        routesTab.classList.add('bg-apple-blue', 'text-white');
+        driversTab.classList.remove('bg-apple-blue', 'text-white');
+        driversTab.classList.add('bg-apple-gray-100', 'text-apple-gray-600');
+    } else {
+        driversContent.classList.remove('hidden');
+        routesContent.classList.add('hidden');
+        driversTab.classList.remove('bg-apple-gray-100', 'text-apple-gray-600');
+        driversTab.classList.add('bg-apple-blue', 'text-white');
+        routesTab.classList.remove('bg-apple-blue', 'text-white');
+        routesTab.classList.add('bg-apple-gray-100', 'text-apple-gray-600');
+    }
+}
+</script>
+{% endblock %}

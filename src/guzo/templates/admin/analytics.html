@@ -1,0 +1,103 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Analytics - Admin - Guzo{% endblock %}
+
+{% block dashboard_content %}
+<!-- Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-semibold text-apple-gray-600">Platform Analytics</h1>
+    <p class="text-apple-gray-400 mt-1">Monitor platform performance and trends</p>
+</div>
+
+<!-- Period Selector -->
+<div class="card-apple p-4 mb-6">
+    <div class="flex items-center gap-2">
+        <span class="text-apple-gray-500 mr-2">Period:</span>
+        <button 
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if period == 'today' %}bg-apple-blue text-white{% else %}bg-apple-gray-100 text-apple-gray-600 hover:bg-apple-gray-200{% endif %}"
+            hx-get="/admin/analytics?period=today"
+            hx-target="#analytics-content"
+            hx-swap="innerHTML"
+        >Today</button>
+        <button 
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if period == 'week' or not period %}bg-apple-blue text-white{% else %}bg-apple-gray-100 text-apple-gray-600 hover:bg-apple-gray-200{% endif %}"
+            hx-get="/admin/analytics?period=week"
+            hx-target="#analytics-content"
+            hx-swap="innerHTML"
+        >This Week</button>
+        <button 
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if period == 'month' %}bg-apple-blue text-white{% else %}bg-apple-gray-100 text-apple-gray-600 hover:bg-apple-gray-200{% endif %}"
+            hx-get="/admin/analytics?period=month"
+            hx-target="#analytics-content"
+            hx-swap="innerHTML"
+        >This Month</button>
+    </div>
+</div>
+
+<div id="analytics-content">
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="card-apple p-6">
+            <span class="text-apple-gray-400 text-sm">Total Revenue</span>
+            <p class="text-3xl font-bold text-apple-gray-600 mt-2">{{ stats.total_revenue|round(2) if stats.total_revenue else 0 }} <span class="text-lg font-normal text-apple-gray-400">ETB</span></p>
+        </div>
+        
+        <div class="card-apple p-6">
+            <span class="text-apple-gray-400 text-sm">Total Bookings</span>
+            <p class="text-3xl font-bold text-apple-gray-600 mt-2">{{ stats.total_bookings if stats.total_bookings else 0 }}</p>
+        </div>
+        
+        <div class="card-apple p-6">
+            <span class="text-apple-gray-400 text-sm">Total Users</span>
+            <p class="text-3xl font-bold text-apple-gray-600 mt-2">{{ stats.total_users if stats.total_users else 0 }}</p>
+        </div>
+        
+        <div class="card-apple p-6">
+            <span class="text-apple-gray-400 text-sm">Total Trips</span>
+            <p class="text-3xl font-bold text-apple-gray-600 mt-2">{{ stats.total_trips if stats.total_trips else 0 }}</p>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Revenue Chart -->
+        <div class="card-apple p-6">
+            <h2 class="text-lg font-semibold text-apple-gray-600 mb-4">Revenue Overview</h2>
+            <div class="h-64 flex items-center justify-center">
+                <p class="text-apple-gray-400">Chart data will appear as bookings are completed</p>
+            </div>
+        </div>
+        
+        <!-- Bookings Chart -->
+        <div class="card-apple p-6">
+            <h2 class="text-lg font-semibold text-apple-gray-600 mb-4">Bookings Overview</h2>
+            <div class="h-64 flex items-center justify-center">
+                <p class="text-apple-gray-400">Chart data will appear as bookings are made</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="card-apple p-6">
+        <h2 class="text-lg font-semibold text-apple-gray-600 mb-4">Platform Summary</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="p-4 bg-apple-gray-50 rounded-xl">
+                <span class="text-apple-gray-400 text-xs">Drivers</span>
+                <p class="text-xl font-semibold text-apple-gray-600">{{ stats.total_drivers if stats.total_drivers else 0 }}</p>
+            </div>
+            <div class="p-4 bg-apple-gray-50 rounded-xl">
+                <span class="text-apple-gray-400 text-xs">Riders</span>
+                <p class="text-xl font-semibold text-apple-gray-600">{{ stats.total_riders if stats.total_riders else 0 }}</p>
+            </div>
+            <div class="p-4 bg-apple-gray-50 rounded-xl">
+                <span class="text-apple-gray-400 text-xs">Completed Trips</span>
+                <p class="text-xl font-semibold text-apple-gray-600">{{ stats.completed_trips if stats.completed_trips else 0 }}</p>
+            </div>
+            <div class="p-4 bg-apple-gray-50 rounded-xl">
+                <span class="text-apple-gray-400 text-xs">Pending Bookings</span>
+                <p class="text-xl font-semibold text-apple-gray-600">{{ stats.pending_bookings if stats.pending_bookings else 0 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

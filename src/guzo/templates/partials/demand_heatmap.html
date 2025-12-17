@@ -1,0 +1,77 @@
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Top Routes -->
+    <div>
+        <h3 class="text-md font-semibold text-apple-gray-900 mb-3">Top Routes (Last {{ days }} days)</h3>
+        {% if heatmap.routes %}
+        <div class="space-y-2">
+            {% for route in heatmap.routes[:10] %}
+            <div class="flex items-center justify-between p-3 bg-apple-gray-50 rounded-lg">
+                <span class="text-sm text-apple-gray-700">{{ route.origin }} → {{ route.destination }}</span>
+                <div class="text-right">
+                    <span class="text-sm font-semibold text-apple-gray-900">{{ route.total_bookings }}</span>
+                    <span class="text-xs text-apple-gray-500">bookings</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-apple-gray-500 text-sm">No route data available</p>
+        {% endif %}
+    </div>
+    
+    <!-- Peak Hours -->
+    <div>
+        <h3 class="text-md font-semibold text-apple-gray-900 mb-3">Peak Hours</h3>
+        <div class="h-48">
+            <canvas id="peakHoursChart"></canvas>
+        </div>
+        
+        <h3 class="text-md font-semibold text-apple-gray-900 mb-3 mt-6">Peak Days</h3>
+        <div class="flex items-end gap-2 h-24">
+            {% set max_bookings = heatmap.peak_days.values()|list|max if heatmap.peak_days else 1 %}
+            {% for day, count in heatmap.peak_days.items() %}
+            <div class="flex-1 flex flex-col items-center">
+                <div 
+                    class="w-full bg-apple-blue rounded-t"
+                    style="height: {{ (count / max_bookings * 100)|int }}%;"
+                ></div>
+                <span class="text-xs text-apple-gray-500 mt-1">{{ day }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('peakHoursChart');
+    if (ctx) {
+        const peakData = {{ heatmap.peak_hours|tojson|safe }};
+        const labels = Array.from({length: 24}, (_, i) => i + ':00');
+        const data = labels.map((_, i) => peakData[i] || 0);
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Bookings',
+                    data: data,
+                    backgroundColor: '#007AFF',
+                    borderRadius: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#E5E5EA' } },
+                    x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } }
+                }
+            }
+        });
+    }
+});
+</script>
+

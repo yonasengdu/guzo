@@ -1,0 +1,33 @@
+{% if pending_reviews %}
+<div class="space-y-4">
+    <h3 class="text-lg font-semibold text-apple-gray-900">Pending Reviews</h3>
+    {% for item in pending_reviews %}
+    <div class="p-4 bg-apple-gray-50 rounded-xl">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-apple-gray-200 rounded-full flex items-center justify-center">
+                    <span class="font-medium text-apple-gray-600">{{ item.reviewee.full_name[0] if item.reviewee else '?' }}</span>
+                </div>
+                <div>
+                    <p class="font-medium text-apple-gray-900">{{ item.reviewee.full_name if item.reviewee else 'Unknown' }}</p>
+                    <p class="text-sm text-apple-gray-500">{{ item.booking.pickup_location }} → {{ item.booking.dropoff_location }}</p>
+                    <p class="text-xs text-apple-gray-400">{{ item.booking.completed_at.strftime('%b %d, %Y') if item.booking.completed_at else '' }}</p>
+                </div>
+            </div>
+            <button 
+                class="btn-primary text-sm px-4 py-2"
+                hx-get="/reviews/form/{{ item.booking.id }}?reviewee_id={{ item.reviewee.id if item.reviewee else '' }}"
+                hx-target="#review-modal-content"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('review-modal').classList.remove('hidden')"
+            >
+                Leave Review
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-apple-gray-500 text-center py-4">No pending reviews</p>
+{% endif %}
+

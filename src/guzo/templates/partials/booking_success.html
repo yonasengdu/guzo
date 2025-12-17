@@ -1,0 +1,16 @@
+<div class="alert-success alert-apple">
+    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <div>
+        <p class="font-medium">Booking confirmed!</p>
+        <p class="text-sm opacity-75">Your ride has been booked successfully. Check your dashboard for details.</p>
+    </div>
+</div>
+
+<script>
+    // Redirect to dashboard after 2 seconds
+    setTimeout(() => {
+        window.location.href = '/customer';
+    }, 2000);
+</script>

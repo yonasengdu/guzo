@@ -1,0 +1,30 @@
+<div class="text-center py-8">
+    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+    </div>
+    <h3 class="text-lg font-semibold text-apple-gray-900 mb-2">Review Submitted!</h3>
+    <p class="text-apple-gray-500 mb-4">Thank you for your feedback</p>
+    
+    <div class="flex items-center justify-center gap-1 mb-4">
+        {% for i in range(review.rating) %}
+        <span class="text-2xl text-yellow-400">★</span>
+        {% endfor %}
+        {% for i in range(5 - review.rating) %}
+        <span class="text-2xl text-apple-gray-300">★</span>
+        {% endfor %}
+    </div>
+    
+    {% if review.comment %}
+    <p class="text-apple-gray-600 italic">"{{ review.comment }}"</p>
+    {% endif %}
+    
+    <button 
+        onclick="document.getElementById('review-modal').classList.add('hidden')"
+        class="btn-primary mt-6"
+    >
+        Done
+    </button>
+</div>
+

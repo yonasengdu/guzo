@@ -1,0 +1,168 @@
+<!-- Sidebar Navigation - Role-based -->
+<aside class="w-64 flex-shrink-0">
+    <nav class="sticky top-24 space-y-1">
+        {% if user.role.value == 'rider' %}
+            <!-- Customer Sidebar -->
+            <a href="/customer" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'dashboard' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/customer/search" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'search' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                Find Rides
+            </a>
+            <a href="/customer/history" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'history' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Trip History
+            </a>
+            <a href="/customer/favorites" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'favorites' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                Favorites
+            </a>
+            
+            <div class="pt-4 mt-4 border-t border-apple-gray-200">
+                <p class="px-4 text-xs font-medium text-apple-gray-400 uppercase tracking-wider mb-2">Account</p>
+                <a href="/customer/profile" 
+                   class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                          {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'profile' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Profile
+                </a>
+            </div>
+            
+        {% elif user.role.value == 'driver' %}
+            <!-- Driver Sidebar -->
+            <a href="/driver" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'dashboard' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/driver/earnings" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'earnings' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Earnings
+            </a>
+            <a href="/driver/schedule" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'schedule' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Schedule
+            </a>
+            <a href="/driver/vehicles" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'vehicles' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+                Vehicles
+            </a>
+            
+            <div class="pt-4 mt-4 border-t border-apple-gray-200">
+                <p class="px-4 text-xs font-medium text-apple-gray-400 uppercase tracking-wider mb-2">Account</p>
+                <a href="/driver/verification" 
+                   class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                          {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'verification' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    Verification
+                    {% if not user.is_verified_by_admin %}
+                    <span class="ml-auto badge-apple badge-warning text-xs">Pending</span>
+                    {% else %}
+                    <span class="ml-auto badge-apple badge-success text-xs">Verified</span>
+                    {% endif %}
+                </a>
+                <a href="/driver/profile" 
+                   class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                          {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'profile' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Profile
+                </a>
+            </div>
+            
+        {% elif user.role.value == 'admin' %}
+            <!-- Admin Sidebar -->
+            <a href="/admin" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'dashboard' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/admin/analytics" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'analytics' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                Analytics
+            </a>
+            <a href="/admin/verification" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'verification' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                Verification
+            </a>
+            <a href="/admin/pricing" 
+               class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                      {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'pricing' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                </svg>
+                Pricing Rules
+            </a>
+            
+            <div class="pt-4 mt-4 border-t border-apple-gray-200">
+                <p class="px-4 text-xs font-medium text-apple-gray-400 uppercase tracking-wider mb-2">Management</p>
+                <a href="/admin/users" 
+                   class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                          {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'users' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    Users
+                </a>
+                <a href="/admin/trips" 
+                   class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
+                          {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'trips' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Trips
+                </a>
+            </div>
+        {% endif %}
+    </nav>
+</aside>
+

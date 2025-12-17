@@ -1,0 +1,118 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Schedule - Guzo{% endblock %}
+
+{% block dashboard_content %}
+<!-- Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-semibold text-apple-gray-600">Schedule</h1>
+    <p class="text-apple-gray-400 mt-1">Manage your availability</p>
+</div>
+
+<!-- Online Status Toggle -->
+<div class="card-apple p-6 mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-apple-gray-600">Current Status</h2>
+            <p class="text-apple-gray-400 text-sm mt-1">Toggle your availability for new bookings</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input 
+                type="checkbox" 
+                class="sr-only peer" 
+                {% if user.is_online %}checked{% endif %}
+                hx-post="/driver/toggle-status"
+                hx-swap="none"
+                hx-trigger="change"
+            >
+            <div class="w-14 h-7 bg-apple-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-apple-green"></div>
+            <span class="ml-3 text-sm font-medium text-apple-gray-600" id="status-text">
+                {% if user.is_online %}Online{% else %}Offline{% endif %}
+            </span>
+        </label>
+    </div>
+</div>
+
+<!-- Weekly Schedule -->
+<div class="card-apple p-6 mb-6">
+    <h2 class="text-lg font-semibold text-apple-gray-600 mb-4">Weekly Schedule</h2>
+    <p class="text-apple-gray-400 text-sm mb-6">Set your regular working hours</p>
+    
+    <form hx-post="/driver/schedule" hx-swap="none" class="space-y-4">
+        {% set days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] %}
+        {% set day_labels = {'monday': 'Monday', 'tuesday': 'Tuesday', 'wednesday': 'Wednesday', 'thursday': 'Thursday', 'friday': 'Friday', 'saturday': 'Saturday', 'sunday': 'Sunday'} %}
+        
+        {% for day in days %}
+        <div class="flex items-center gap-4 p-4 bg-apple-gray-50 rounded-xl">
+            <div class="w-28">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        name="{{ day }}_enabled" 
+                        value="true"
+                        class="w-4 h-4 text-apple-blue rounded"
+                    >
+                    <span class="text-apple-gray-600 font-medium">{{ day_labels[day] }}</span>
+                </label>
+            </div>
+            
+            <div class="flex items-center gap-2 flex-1">
+                <input 
+                    type="time" 
+                    name="{{ day }}_start"
+                    value="08:00"
+                    class="input-apple text-sm"
+                >
+                <span class="text-apple-gray-400">to</span>
+                <input 
+                    type="time" 
+                    name="{{ day }}_end"
+                    value="18:00"
+                    class="input-apple text-sm"
+                >
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="pt-4">
+            <button type="submit" class="btn-apple btn-apple-primary w-full">
+                Save Schedule
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Upcoming Trips -->
+<div class="card-apple p-6">
+    <h2 class="text-lg font-semibold text-apple-gray-600 mb-4">Upcoming Trips</h2>
+    
+    {% if trips %}
+    <div class="space-y-3">
+        {% for trip in trips %}
+        <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-apple-blue/10 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-apple-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-medium text-apple-gray-600">{{ trip.origin }} → {{ trip.destination }}</p>
+                    <p class="text-sm text-apple-gray-400">{{ trip.departure_time.strftime('%b %d, %Y at %H:%M') }}</p>
+                </div>
+            </div>
+            <span class="badge-apple badge-info">{{ trip.booked_seats }}/{{ trip.available_seats }} booked</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-8">
+        <svg class="w-12 h-12 text-apple-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <p class="text-apple-gray-400">No upcoming trips</p>
+        <a href="/driver" class="text-apple-blue text-sm hover:underline mt-2 inline-block">Create a new trip</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

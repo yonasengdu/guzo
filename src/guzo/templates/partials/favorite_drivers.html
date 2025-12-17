@@ -1,0 +1,55 @@
+{% if drivers %}
+<div class="space-y-3">
+    {% for driver in drivers %}
+    <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl" id="driver-fav-{{ driver.driver_id }}">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-apple-gray-200 rounded-full flex items-center justify-center">
+                <span class="text-lg font-medium text-apple-gray-600">{{ driver.driver_name[0] if driver.driver_name else '?' }}</span>
+            </div>
+            <div>
+                <p class="font-medium text-apple-gray-900">{{ driver.driver_name or 'Unknown Driver' }}</p>
+                <div class="flex items-center gap-2 text-sm text-apple-gray-500">
+                    {% if driver.driver_rating %}
+                    <span class="flex items-center gap-1">
+                        <span class="text-yellow-500">★</span>
+                        {{ driver.driver_rating }}
+                    </span>
+                    <span class="text-apple-gray-300">•</span>
+                    {% endif %}
+                    {% if driver.driver_phone %}
+                    <span>{{ driver.driver_phone }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a 
+                href="/customer/search?driver={{ driver.driver_id }}"
+                class="text-sm text-apple-blue hover:underline"
+            >
+                View Trips
+            </a>
+            <button 
+                class="p-2 text-red-400 hover:text-red-600 transition-colors"
+                hx-delete="/favorites/drivers/{{ driver.driver_id }}"
+                hx-target="#driver-fav-{{ driver.driver_id }}"
+                hx-swap="outerHTML"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-8">
+    <svg class="w-12 h-12 text-apple-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+    </svg>
+    <p class="text-apple-gray-500">No favorite drivers yet</p>
+    <p class="text-apple-gray-400 text-sm mt-1">Add drivers you like to find them quickly</p>
+</div>
+{% endif %}
+

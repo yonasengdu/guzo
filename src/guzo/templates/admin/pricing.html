@@ -1,0 +1,262 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Pricing Rules - Admin - Guzo{% endblock %}
+
+{% block dashboard_content %}
+<!-- Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-semibold text-apple-gray-600">Pricing Rules</h1>
+    <p class="text-apple-gray-400 mt-1">Manage route pricing and surge multipliers</p>
+</div>
+
+<!-- Tabs -->
+<div class="flex gap-4 mb-6">
+    <button 
+        class="px-6 py-3 rounded-xl text-sm font-medium transition-all bg-apple-blue text-white"
+        id="rules-tab"
+        onclick="showPricingTab('rules')"
+    >
+        Route Pricing
+    </button>
+    <button 
+        class="px-6 py-3 rounded-xl text-sm font-medium transition-all bg-apple-gray-100 text-apple-gray-600 hover:bg-apple-gray-200"
+        id="surge-tab"
+        onclick="showPricingTab('surge')"
+    >
+        Surge Pricing
+    </button>
+</div>
+
+<!-- Route Pricing Content -->
+<div id="rules-content">
+    <div class="card-apple p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-apple-gray-600">Route Pricing Rules</h2>
+            <button 
+                class="btn-apple btn-apple-primary !py-2 !px-4 text-sm"
+                onclick="document.getElementById('add-rule-modal').classList.remove('hidden')"
+            >
+                + Add Rule
+            </button>
+        </div>
+        
+        {% if pricing_rules %}
+        <div class="space-y-3">
+            {% for rule in pricing_rules %}
+            <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
+                <div>
+                    <p class="font-medium text-apple-gray-600">{{ rule.origin }} → {{ rule.destination }}</p>
+                    <p class="text-sm text-apple-gray-400">Base: {{ rule.base_price_per_seat }} ETB/seat | {{ rule.base_whole_car_price }} ETB/car</p>
+                </div>
+                <button 
+                    class="text-apple-red text-sm hover:underline"
+                    hx-delete="/admin/pricing/rule/{{ rule.id }}"
+                    hx-confirm="Delete this pricing rule?"
+                    hx-swap="none"
+                    hx-on::after-request="location.reload()"
+                >Delete</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-apple-gray-400">No pricing rules configured</p>
+            <p class="text-sm text-apple-gray-400 mt-1">Add rules to set base prices for routes</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Surge Pricing Content -->
+<div id="surge-content" class="hidden">
+    <div class="card-apple p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-apple-gray-600">Active Surge Multipliers</h2>
+            <button 
+                class="btn-apple btn-apple-primary !py-2 !px-4 text-sm"
+                onclick="document.getElementById('add-surge-modal').classList.remove('hidden')"
+            >
+                + Add Surge
+            </button>
+        </div>
+        
+        <div class="mb-4 p-4 bg-apple-gray-50 rounded-xl">
+            <h3 class="text-sm font-medium text-apple-gray-600 mb-2">Automatic Peak Hour Surge</h3>
+            <p class="text-sm text-apple-gray-400">Peak hours (7-9am and 5-7pm) automatically apply a 1.2x multiplier.</p>
+        </div>
+        
+        {% if surge_rules %}
+        <div class="space-y-3">
+            {% for surge in surge_rules %}
+            <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
+                <div>
+                    <p class="font-medium text-apple-gray-600">{{ surge.location }}</p>
+                    <p class="text-sm text-apple-gray-400">{{ surge.multiplier }}x multiplier | Until {{ surge.end_time.strftime('%b %d, %H:%M') }}</p>
+                </div>
+                <button 
+                    class="text-apple-red text-sm hover:underline"
+                    hx-delete="/admin/pricing/surge/{{ surge.id }}"
+                    hx-confirm="Delete this surge rule?"
+                    hx-swap="none"
+                    hx-on::after-request="location.reload()"
+                >Delete</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-apple-gray-400">No active surge pricing</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Rule Modal -->
+<div id="add-rule-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+        <div class="p-6 border-b border-apple-gray-100">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-apple-gray-600">Add Pricing Rule</h2>
+                <button onclick="document.getElementById('add-rule-modal').classList.add('hidden')" class="text-apple-gray-400 hover:text-apple-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <form hx-post="/admin/pricing/rule/create" hx-swap="none" hx-on::after-request="location.reload()" class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-apple-gray-500 mb-2">Origin</label>
+                    <select name="origin" class="select-apple" required>
+                        <option value="">Select</option>
+                        <option value="Addis Ababa">Addis Ababa</option>
+                        <option value="Adama">Adama</option>
+                        <option value="Bahir Dar">Bahir Dar</option>
+                        <option value="Dire Dawa">Dire Dawa</option>
+                        <option value="Gondar">Gondar</option>
+                        <option value="Hawassa">Hawassa</option>
+                        <option value="Mekelle">Mekelle</option>
+                        <option value="Jimma">Jimma</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-apple-gray-500 mb-2">Destination</label>
+                    <select name="destination" class="select-apple" required>
+                        <option value="">Select</option>
+                        <option value="Addis Ababa">Addis Ababa</option>
+                        <option value="Adama">Adama</option>
+                        <option value="Bahir Dar">Bahir Dar</option>
+                        <option value="Dire Dawa">Dire Dawa</option>
+                        <option value="Gondar">Gondar</option>
+                        <option value="Hawassa">Hawassa</option>
+                        <option value="Mekelle">Mekelle</option>
+                        <option value="Jimma">Jimma</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Base Price per Seat (ETB)</label>
+                <input type="number" name="base_price_per_seat" step="1" min="0" required class="input-apple" placeholder="500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Base Whole Car Price (ETB)</label>
+                <input type="number" name="base_whole_car_price" step="1" min="0" required class="input-apple" placeholder="2000">
+            </div>
+            
+            <div class="pt-4 flex gap-3">
+                <button type="button" onclick="document.getElementById('add-rule-modal').classList.add('hidden')" class="btn-apple btn-apple-secondary flex-1">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-apple btn-apple-primary flex-1">
+                    Add Rule
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Surge Modal -->
+<div id="add-surge-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+        <div class="p-6 border-b border-apple-gray-100">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-apple-gray-600">Add Surge Multiplier</h2>
+                <button onclick="document.getElementById('add-surge-modal').classList.add('hidden')" class="text-apple-gray-400 hover:text-apple-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <form hx-post="/admin/pricing/surge/create" hx-swap="none" hx-on::after-request="location.reload()" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Location</label>
+                <select name="location" class="select-apple" required>
+                    <option value="">Select</option>
+                    <option value="Addis Ababa">Addis Ababa</option>
+                    <option value="Adama">Adama</option>
+                    <option value="Bahir Dar">Bahir Dar</option>
+                    <option value="Dire Dawa">Dire Dawa</option>
+                    <option value="*">All Locations</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Multiplier</label>
+                <input type="number" name="multiplier" step="0.1" min="1" max="5" required class="input-apple" placeholder="1.5">
+                <p class="text-xs text-apple-gray-400 mt-1">1.5 = 50% increase, 2.0 = 100% increase</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-apple-gray-500 mb-2">Start Time</label>
+                    <input type="datetime-local" name="start_time" required class="input-apple">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-apple-gray-500 mb-2">End Time</label>
+                    <input type="datetime-local" name="end_time" required class="input-apple">
+                </div>
+            </div>
+            
+            <div class="pt-4 flex gap-3">
+                <button type="button" onclick="document.getElementById('add-surge-modal').classList.add('hidden')" class="btn-apple btn-apple-secondary flex-1">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-apple btn-apple-primary flex-1">
+                    Add Surge
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showPricingTab(tab) {
+    const rulesContent = document.getElementById('rules-content');
+    const surgeContent = document.getElementById('surge-content');
+    const rulesTab = document.getElementById('rules-tab');
+    const surgeTab = document.getElementById('surge-tab');
+    
+    if (tab === 'rules') {
+        rulesContent.classList.remove('hidden');
+        surgeContent.classList.add('hidden');
+        rulesTab.classList.remove('bg-apple-gray-100', 'text-apple-gray-600');
+        rulesTab.classList.add('bg-apple-blue', 'text-white');
+        surgeTab.classList.remove('bg-apple-blue', 'text-white');
+        surgeTab.classList.add('bg-apple-gray-100', 'text-apple-gray-600');
+    } else {
+        surgeContent.classList.remove('hidden');
+        rulesContent.classList.add('hidden');
+        surgeTab.classList.remove('bg-apple-gray-100', 'text-apple-gray-600');
+        surgeTab.classList.add('bg-apple-blue', 'text-white');
+        rulesTab.classList.remove('bg-apple-blue', 'text-white');
+        rulesTab.classList.add('bg-apple-gray-100', 'text-apple-gray-600');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% if reviews %}
+<div class="space-y-4">
+    {% for review in reviews %}
+    <div class="p-4 bg-apple-gray-50 rounded-xl">
+        <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-apple-gray-200 rounded-full flex items-center justify-center">
+                    <span class="text-sm font-medium text-apple-gray-600">{{ review.reviewer_name[0] if review.reviewer_name else '?' }}</span>
+                </div>
+                <div>
+                    <p class="font-medium text-apple-gray-900 text-sm">{{ review.reviewer_name or 'Anonymous' }}</p>
+                    <p class="text-xs text-apple-gray-500">{{ review.created_at.strftime('%b %d, %Y') }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1">
+                {% for i in range(review.rating) %}
+                <span class="text-yellow-400">★</span>
+                {% endfor %}
+                {% for i in range(5 - review.rating) %}
+                <span class="text-apple-gray-300">★</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% if review.comment %}
+        <p class="text-apple-gray-600 text-sm">{{ review.comment }}</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-8">
+    <p class="text-apple-gray-500">No reviews yet</p>
+</div>
+{% endif %}
+

@@ -1,0 +1,64 @@
+<form 
+    hx-post="/verification/submit" 
+    hx-target="#verification-status" 
+    hx-swap="innerHTML"
+    hx-encoding="multipart/form-data"
+    class="space-y-4"
+>
+    <div>
+        <label class="block text-sm font-medium text-apple-gray-700 mb-1">Profile Photo</label>
+        <input 
+            type="file" 
+            name="profile_photo" 
+            accept="image/*"
+            class="input-apple"
+        >
+        <p class="text-xs text-apple-gray-500 mt-1">Clear photo of your face</p>
+    </div>
+    
+    <div>
+        <label class="block text-sm font-medium text-apple-gray-700 mb-1">Driver's License</label>
+        <input 
+            type="file" 
+            name="license_document" 
+            accept="image/*,.pdf"
+            class="input-apple"
+        >
+        <p class="text-xs text-apple-gray-500 mt-1">Photo or scan of your valid driver's license</p>
+    </div>
+    
+    <div>
+        <label class="block text-sm font-medium text-apple-gray-700 mb-1">License Number</label>
+        <input 
+            type="text" 
+            name="license_number" 
+            class="input-apple"
+            placeholder="Enter license number"
+        >
+    </div>
+    
+    <div>
+        <label class="block text-sm font-medium text-apple-gray-700 mb-1">License Expiry Date</label>
+        <input 
+            type="date" 
+            name="license_expiry" 
+            class="input-apple"
+        >
+    </div>
+    
+    <div>
+        <label class="block text-sm font-medium text-apple-gray-700 mb-1">Vehicle Registration</label>
+        <input 
+            type="file" 
+            name="vehicle_registration" 
+            accept="image/*,.pdf"
+            class="input-apple"
+        >
+        <p class="text-xs text-apple-gray-500 mt-1">Photo or scan of vehicle registration document</p>
+    </div>
+    
+    <button type="submit" class="btn-primary w-full">
+        Submit for Verification
+    </button>
+</form>
+

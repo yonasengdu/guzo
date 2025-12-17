@@ -1,0 +1,59 @@
+<div class="p-4 bg-apple-gray-50 rounded-xl">
+    <div class="flex items-center justify-between mb-3">
+        <span class="text-apple-gray-700">{{ origin }} → {{ destination }}</span>
+        <span class="text-2xl font-bold {% if recommendation.recommended_multiplier > 1 %}text-orange-500{% else %}text-green-500{% endif %}">
+            {{ recommendation.recommended_multiplier }}x
+        </span>
+    </div>
+    
+    <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+            <span class="text-apple-gray-500">Reason:</span>
+            <span class="text-apple-gray-900">{{ recommendation.reason|replace('_', ' ')|title }}</span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-apple-gray-500">Recent Bookings (24h):</span>
+            <span class="text-apple-gray-900">{{ recommendation.recent_bookings }}</span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-apple-gray-500">Current Hour:</span>
+            <span class="text-apple-gray-900">{{ recommendation.current_hour }}:00</span>
+        </div>
+    </div>
+    
+    {% if recommendation.recommended_multiplier > 1 %}
+    <button 
+        class="btn-primary w-full mt-4 text-sm"
+        onclick="applySurgeRecommendation('{{ origin }}-{{ destination }}', {{ recommendation.recommended_multiplier }}, '{{ recommendation.reason }}')"
+    >
+        Apply {{ recommendation.recommended_multiplier }}x Surge
+    </button>
+    {% endif %}
+</div>
+
+<script>
+function applySurgeRecommendation(routeKey, multiplier, reason) {
+    // Get current time and set end time to 2 hours from now
+    const now = new Date();
+    const end = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    
+    const formData = new FormData();
+    formData.append('route_key', routeKey);
+    formData.append('multiplier', multiplier);
+    formData.append('reason', reason);
+    formData.append('start_time', now.toISOString().slice(0, 16));
+    formData.append('end_time', end.toISOString().slice(0, 16));
+    formData.append('description', 'Auto-suggested surge');
+    
+    fetch('/pricing/surges', {
+        method: 'POST',
+        body: formData,
+    }).then(response => {
+        if (response.ok) {
+            htmx.trigger('#surge-list', 'htmx:load');
+            alert('Surge applied successfully!');
+        }
+    });
+}
+</script>
+

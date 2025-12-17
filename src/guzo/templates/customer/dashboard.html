@@ -1,0 +1,177 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Dashboard - Guzo{% endblock %}
+
+{% block dashboard_content %}
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
+    <div>
+        <h1 class="text-3xl font-semibold text-apple-gray-600">Welcome, {{ user.full_name.split()[0] }}</h1>
+        <p class="text-apple-gray-400 mt-1">Manage your trips and bookings</p>
+    </div>
+    <a href="/customer/search" class="btn-apple btn-apple-primary">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        Find a Ride
+    </a>
+</div>
+
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="card-apple p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-apple-blue/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-apple-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-semibold text-apple-gray-600">{{ bookings|length }}</p>
+                <p class="text-sm text-apple-gray-400">Total Bookings</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-apple p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-apple-green/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-apple-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-semibold text-apple-gray-600">{{ bookings|selectattr('status.value', 'equalto', 'completed')|list|length }}</p>
+                <p class="text-sm text-apple-gray-400">Completed Trips</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-apple p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-apple-orange/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-apple-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-semibold text-apple-gray-600">{{ bookings|selectattr('status.value', 'equalto', 'pending')|list|length + bookings|selectattr('status.value', 'equalto', 'confirmed')|list|length }}</p>
+                <p class="text-sm text-apple-gray-400">Upcoming</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bookings Section -->
+<div class="card-apple">
+    <div class="p-6 border-b border-apple-gray-100">
+        <h2 class="text-xl font-semibold text-apple-gray-600">Your Bookings</h2>
+    </div>
+    
+    {% if bookings %}
+    <div class="divide-y divide-apple-gray-100">
+        {% for booking in bookings %}
+        <div class="p-6 hover:bg-apple-gray-50 transition-colors">
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+                <!-- Route Info -->
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="font-semibold text-apple-gray-600">{{ booking.pickup_location }}</span>
+                        <svg class="w-4 h-4 text-apple-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                        <span class="font-semibold text-apple-gray-600">{{ booking.dropoff_location }}</span>
+                    </div>
+                    <div class="flex items-center gap-4 text-sm text-apple-gray-400">
+                        <span>{{ booking.scheduled_time.strftime('%b %d, %Y at %H:%M') }}</span>
+                        <span>•</span>
+                        <span>{{ booking.seats_booked }} seat{% if booking.seats_booked > 1 %}s{% endif %}</span>
+                    </div>
+                </div>
+                
+                <!-- Status & Price -->
+                <div class="flex items-center gap-4">
+                    {% if booking.price %}
+                    <span class="text-lg font-semibold text-apple-gray-600">{{ booking.price|int }} ETB</span>
+                    {% endif %}
+                    
+                    {% if booking.status.value == 'pending' %}
+                    <span class="badge-apple badge-warning">Pending</span>
+                    {% elif booking.status.value == 'confirmed' %}
+                    <span class="badge-apple badge-info">Confirmed</span>
+                    {% elif booking.status.value == 'completed' %}
+                    <span class="badge-apple badge-success">Completed</span>
+                    {% elif booking.status.value == 'cancelled' %}
+                    <span class="badge-apple badge-error">Cancelled</span>
+                    {% else %}
+                    <span class="badge-apple" style="background: #f5f5f7; color: #6e6e73;">{{ booking.status.value }}</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Actions -->
+                {% if booking.status.value in ['pending', 'confirmed'] %}
+                <button 
+                    hx-post="/customer/booking/{{ booking.id }}/cancel"
+                    hx-confirm="Are you sure you want to cancel this booking?"
+                    hx-swap="outerHTML"
+                    class="text-sm text-apple-red font-medium hover:underline"
+                >
+                    Cancel
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+        <div class="w-16 h-16 bg-apple-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+        </div>
+        <h3 class="text-lg font-medium text-apple-gray-600 mb-2">No bookings yet</h3>
+        <p class="text-apple-gray-400 mb-6">Start by searching for available rides</p>
+        <a href="/customer/search" class="btn-apple btn-apple-primary">
+            Find a Ride
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Charter Request Section -->
+<div class="card-apple mt-8 p-8">
+    <h2 class="text-xl font-semibold text-apple-gray-600 mb-2">Need a custom trip?</h2>
+    <p class="text-apple-gray-400 mb-6">Can't find a ride that fits your schedule? Request a charter and we'll match you with a driver.</p>
+    
+    <form hx-post="/customer/book/charter" hx-target="#charter-result" hx-swap="innerHTML" class="space-y-4">
+        <div id="charter-result"></div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Pickup Location</label>
+                <input type="text" name="pickup_location" placeholder="e.g., Addis Ababa" class="input-apple" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Drop-off Location</label>
+                <input type="text" name="dropoff_location" placeholder="e.g., Bahir Dar" class="input-apple" required>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Date & Time</label>
+                <input type="datetime-local" name="scheduled_time" class="input-apple" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Notes (optional)</label>
+                <input type="text" name="notes" placeholder="Any special requests" class="input-apple">
+            </div>
+        </div>
+        
+        <button type="submit" class="btn-apple btn-apple-secondary">
+            Request Charter
+        </button>
+    </form>
+</div>
+{% endblock %}

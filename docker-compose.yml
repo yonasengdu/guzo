@@ -1,0 +1,44 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: guzo_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-guzo}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-guzopass123}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-guzo_db}
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: guzo_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: guzo_app
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://guzo:guzopass123@mongodb:27017/guzo_db?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY:-your-super-secret-key-change-in-production}
+    depends_on:
+      - mongodb
+      - redis
+    volumes:
+      - ./src:/app/src
+      - ./static:/app/static
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  redis_data:
+

@@ -1,0 +1,320 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Driver Dashboard - Guzo{% endblock %}
+
+{% block dashboard_content %}
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
+    <div>
+        <h1 class="text-3xl font-semibold text-apple-gray-600">Driver Dashboard</h1>
+        <p class="text-apple-gray-400 mt-1">Manage your trips and bookings</p>
+    </div>
+    
+    <!-- Online Toggle -->
+    <button 
+        hx-post="/driver/toggle-status"
+        hx-swap="outerHTML"
+        class="btn-apple {{ 'bg-apple-green text-white hover:bg-green-600' if user.is_online else 'bg-apple-gray-200 text-apple-gray-600 hover:bg-apple-gray-300' }}"
+    >
+        <span class="w-2 h-2 rounded-full {{ 'bg-white' if user.is_online else 'bg-apple-gray-400' }} mr-2"></span>
+        {{ 'Online' if user.is_online else 'Offline' }}
+    </button>
+</div>
+
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+    <div class="card-apple p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-apple-blue/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-apple-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-semibold text-apple-gray-600">{{ trips|length }}</p>
+                <p class="text-sm text-apple-gray-400">Active Trips</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-apple p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-apple-green/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-apple-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-semibold text-apple-gray-600">{{ bookings|length }}</p>
+                <p class="text-sm text-apple-gray-400">Bookings</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-apple p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-apple-orange/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-apple-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-semibold text-apple-gray-600">{{ pending_requests|length }}</p>
+                <p class="text-sm text-apple-gray-400">Requests</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-apple p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-semibold text-apple-gray-600">{{ user.rating }}</p>
+                <p class="text-sm text-apple-gray-400">Rating</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Left Column - Trips & Bookings -->
+    <div class="lg:col-span-2 space-y-8">
+        <!-- My Trips -->
+        <div class="card-apple">
+            <div class="p-6 border-b border-apple-gray-100 flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-apple-gray-600">My Trips</h2>
+                <button onclick="document.getElementById('create-trip-modal').classList.remove('hidden')" class="btn-apple btn-apple-primary !py-2 !px-4 text-sm">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    New Trip
+                </button>
+            </div>
+            
+            {% if trips %}
+            <div class="divide-y divide-apple-gray-100">
+                {% for trip in trips %}
+                <div class="p-6 hover:bg-apple-gray-50 transition-colors">
+                    <div class="flex flex-col md:flex-row md:items-center gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="font-semibold text-apple-gray-600">{{ trip.origin }}</span>
+                                <svg class="w-4 h-4 text-apple-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                                </svg>
+                                <span class="font-semibold text-apple-gray-600">{{ trip.destination }}</span>
+                            </div>
+                            <div class="flex items-center gap-4 text-sm text-apple-gray-400">
+                                <span>{{ trip.departure_time.strftime('%b %d, %H:%M') }}</span>
+                                <span>•</span>
+                                <span>{{ trip.booked_seats }}/{{ trip.available_seats }} booked</span>
+                                <span>•</span>
+                                <span>{{ trip.price_per_seat|int }} ETB/seat</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            {% if trip.status.value == 'scheduled' %}
+                            <span class="badge-apple badge-info">Scheduled</span>
+                            {% elif trip.status.value == 'in_progress' %}
+                            <span class="badge-apple badge-warning">In Progress</span>
+                            {% elif trip.status.value == 'completed' %}
+                            <span class="badge-apple badge-success">Completed</span>
+                            {% endif %}
+                            
+                            <button 
+                                hx-post="/driver/trip/{{ trip.id }}/delete"
+                                hx-confirm="Are you sure you want to delete this trip?"
+                                hx-target="closest div.p-6"
+                                hx-swap="outerHTML"
+                                class="text-apple-red text-sm hover:underline"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-12 text-center">
+                <div class="w-16 h-16 bg-apple-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-apple-gray-600 mb-2">No trips yet</h3>
+                <p class="text-apple-gray-400">Create your first trip to start accepting bookings</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- My Bookings -->
+        <div class="card-apple">
+            <div class="p-6 border-b border-apple-gray-100">
+                <h2 class="text-xl font-semibold text-apple-gray-600">My Bookings</h2>
+            </div>
+            
+            {% if bookings %}
+            <div class="divide-y divide-apple-gray-100">
+                {% for booking in bookings %}
+                <div class="p-6 hover:bg-apple-gray-50 transition-colors">
+                    <div class="flex flex-col md:flex-row md:items-center gap-4">
+                        <div class="flex-1">
+                            <p class="font-semibold text-apple-gray-600 mb-1">{{ booking.customer_name }}</p>
+                            <div class="flex items-center gap-2 text-sm text-apple-gray-400">
+                                <span>{{ booking.pickup_location }} → {{ booking.dropoff_location }}</span>
+                            </div>
+                            <p class="text-sm text-apple-gray-400 mt-1">{{ booking.scheduled_time.strftime('%b %d, %H:%M') }} • {{ booking.seats_booked }} seat{% if booking.seats_booked > 1 %}s{% endif %}</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            {% if booking.price %}
+                            <span class="font-semibold text-apple-gray-600">{{ booking.price|int }} ETB</span>
+                            {% endif %}
+                            
+                            {% if booking.status.value == 'confirmed' %}
+                            <button 
+                                hx-post="/driver/booking/{{ booking.id }}/complete"
+                                hx-swap="outerHTML"
+                                class="btn-apple btn-apple-primary !py-2 !px-4 text-sm"
+                            >
+                                Complete
+                            </button>
+                            {% elif booking.status.value == 'completed' %}
+                            <span class="badge-apple badge-success">Completed</span>
+                            {% else %}
+                            <span class="badge-apple badge-warning">{{ booking.status.value }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-12 text-center">
+                <p class="text-apple-gray-400">No bookings yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Right Column - Requests -->
+    <div>
+        <div class="card-apple">
+            <div class="p-6 border-b border-apple-gray-100">
+                <h2 class="text-xl font-semibold text-apple-gray-600">Charter Requests</h2>
+            </div>
+            
+            {% if pending_requests %}
+            <div class="divide-y divide-apple-gray-100">
+                {% for req in pending_requests %}
+                <div class="p-6">
+                    <p class="font-semibold text-apple-gray-600 mb-2">{{ req.customer_name }}</p>
+                    <p class="text-sm text-apple-gray-400 mb-1">{{ req.pickup_location }} → {{ req.dropoff_location }}</p>
+                    <p class="text-sm text-apple-gray-400 mb-4">{{ req.scheduled_time.strftime('%b %d, %H:%M') }}</p>
+                    
+                    <form hx-post="/driver/request/{{ req.id }}/accept" hx-swap="outerHTML" class="space-y-3">
+                        <input type="number" name="price" placeholder="Your price (ETB)" class="input-apple text-sm" required>
+                        <button type="submit" class="btn-apple btn-apple-primary w-full text-sm">
+                            Accept Request
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-8 text-center">
+                <p class="text-apple-gray-400 text-sm">No pending requests</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Trip Modal -->
+<div id="create-trip-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div class="card-apple w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-apple-gray-100 flex items-center justify-between">
+            <h3 class="text-xl font-semibold text-apple-gray-600">Create New Trip</h3>
+            <button onclick="document.getElementById('create-trip-modal').classList.add('hidden')" class="text-apple-gray-400 hover:text-apple-gray-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <form hx-post="/driver/trip/create" hx-swap="none" hx-on::after-request="if(event.detail.successful) { location.reload(); }" class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-apple-gray-500 mb-2">From</label>
+                    <select name="origin" class="select-apple" required>
+                        <option value="">Select origin</option>
+                        <option value="Addis Ababa">Addis Ababa</option>
+                        <option value="Adama">Adama</option>
+                        <option value="Bahir Dar">Bahir Dar</option>
+                        <option value="Dire Dawa">Dire Dawa</option>
+                        <option value="Gondar">Gondar</option>
+                        <option value="Hawassa">Hawassa</option>
+                        <option value="Mekelle">Mekelle</option>
+                        <option value="Jimma">Jimma</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-apple-gray-500 mb-2">To</label>
+                    <select name="destination" class="select-apple" required>
+                        <option value="">Select destination</option>
+                        <option value="Addis Ababa">Addis Ababa</option>
+                        <option value="Adama">Adama</option>
+                        <option value="Bahir Dar">Bahir Dar</option>
+                        <option value="Dire Dawa">Dire Dawa</option>
+                        <option value="Gondar">Gondar</option>
+                        <option value="Hawassa">Hawassa</option>
+                        <option value="Mekelle">Mekelle</option>
+                        <option value="Jimma">Jimma</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Departure Date & Time</label>
+                <input type="datetime-local" name="departure_time" class="input-apple" required>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-apple-gray-500 mb-2">Seats</label>
+                    <input type="number" name="available_seats" value="4" min="1" max="50" class="input-apple" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-apple-gray-500 mb-2">Price/Seat</label>
+                    <input type="number" name="price_per_seat" placeholder="ETB" min="1" class="input-apple" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-apple-gray-500 mb-2">Whole Car</label>
+                    <input type="number" name="whole_car_price" placeholder="ETB" min="1" class="input-apple" required>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Notes (optional)</label>
+                <input type="text" name="notes" placeholder="Any additional information" class="input-apple">
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="document.getElementById('create-trip-modal').classList.add('hidden')" class="btn-apple btn-apple-secondary flex-1">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-apple btn-apple-primary flex-1">
+                    Create Trip
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

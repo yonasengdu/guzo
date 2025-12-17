@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Guzo - Book rides across Ethiopia">
+    <meta name="theme-color" content="#ffffff">
+    <title>{% block title %}Guzo Rideshare{% endblock %}</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/static/assets/logo.png">
+    
+    <!-- Fonts - Inter (similar to SF Pro) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    colors: {
+                        apple: {
+                            gray: {
+                                50: '#fafafa',
+                                100: '#f5f5f7',
+                                200: '#e8e8ed',
+                                300: '#d2d2d7',
+                                400: '#86868b',
+                                500: '#6e6e73',
+                                600: '#1d1d1f',
+                            },
+                            blue: '#0071e3',
+                            green: '#34c759',
+                            red: '#ff3b30',
+                            orange: '#ff9500',
+                        }
+                    },
+                    boxShadow: {
+                        'apple': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'apple-lg': '0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        'apple-xl': '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+                    },
+                    borderRadius: {
+                        'apple': '12px',
+                        'apple-lg': '16px',
+                        'apple-xl': '20px',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #ffffff;
+            color: #1d1d1f;
+        }
+        
+        /* Apple-style button */
+        .btn-apple {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            font-size: 17px;
+            font-weight: 500;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        
+        .btn-apple-primary {
+            background-color: #0071e3;
+            color: white;
+        }
+        
+        .btn-apple-primary:hover {
+            background-color: #0077ed;
+            transform: scale(1.02);
+        }
+        
+        .btn-apple-primary:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-apple-secondary {
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+        
+        .btn-apple-secondary:hover {
+            background-color: #e8e8ed;
+        }
+        
+        /* Apple-style input */
+        .input-apple {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 17px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        
+        .input-apple:focus {
+            border-color: #0071e3;
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+        }
+        
+        .input-apple::placeholder {
+            color: #86868b;
+        }
+        
+        /* Apple-style card */
+        .card-apple {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Apple-style select */
+        .select-apple {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 17px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2386868b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+            padding-right: 44px;
+        }
+        
+        .select-apple:focus {
+            border-color: #0071e3;
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+        }
+        
+        /* Badge styles */
+        .badge-apple {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 6px;
+        }
+        
+        .badge-success {
+            background-color: rgba(52, 199, 89, 0.12);
+            color: #248a3d;
+        }
+        
+        .badge-warning {
+            background-color: rgba(255, 149, 0, 0.12);
+            color: #c93400;
+        }
+        
+        .badge-error {
+            background-color: rgba(255, 59, 48, 0.12);
+            color: #d70015;
+        }
+        
+        .badge-info {
+            background-color: rgba(0, 113, 227, 0.12);
+            color: #0071e3;
+        }
+        
+        /* Alert styles */
+        .alert-apple {
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .alert-success {
+            background-color: rgba(52, 199, 89, 0.12);
+            color: #248a3d;
+        }
+        
+        .alert-error {
+            background-color: rgba(255, 59, 48, 0.12);
+            color: #d70015;
+        }
+        
+        /* Glass effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+        }
+        
+        /* Smooth page transitions */
+        .htmx-settling {
+            opacity: 0;
+        }
+        
+        .htmx-swapping {
+            opacity: 0;
+            transition: opacity 0.15s ease-out;
+        }
+        
+        /* Loading indicator */
+        .htmx-request .htmx-indicator {
+            display: inline-flex;
+        }
+        
+        .htmx-indicator {
+            display: none;
+        }
+        
+        /* Divider */
+        .divider-apple {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: #86868b;
+            font-size: 13px;
+        }
+        
+        .divider-apple::before,
+        .divider-apple::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background-color: #d2d2d7;
+        }
+        
+        /* Table styles */
+        .table-apple {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .table-apple th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #86868b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e8e8ed;
+        }
+        
+        .table-apple td {
+            padding: 16px;
+            border-bottom: 1px solid #f5f5f7;
+            font-size: 15px;
+        }
+        
+        .table-apple tbody tr:hover {
+            background-color: #fafafa;
+        }
+        
+        /* Tab styles */
+        .tabs-apple {
+            display: flex;
+            gap: 4px;
+            background: #f5f5f7;
+            padding: 4px;
+            border-radius: 10px;
+        }
+        
+        .tab-apple {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6e6e73;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .tab-apple:hover {
+            color: #1d1d1f;
+        }
+        
+        .tab-apple.active {
+            background: #ffffff;
+            color: #1d1d1f;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+    </style>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col bg-white">
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 glass border-b border-apple-gray-200">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo - links to dashboard for authenticated users, landing for guests -->
+                {% if user %}
+                    {% if user.role.value == 'driver' %}
+                        <a href="/driver" class="flex items-center gap-3">
+                    {% elif user.role.value == 'admin' %}
+                        <a href="/admin" class="flex items-center gap-3">
+                    {% else %}
+                        <a href="/customer" class="flex items-center gap-3">
+                    {% endif %}
+                {% else %}
+                    <a href="/" class="flex items-center gap-3">
+                {% endif %}
+                    <img src="/static/assets/logo.png" alt="Guzo" class="w-8 h-8">
+                    <span class="text-xl font-semibold text-apple-gray-600">Guzo</span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center gap-8">
+                    {% if user %}
+                        {% if user.role.value == 'rider' %}
+                            <a href="/customer" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">Dashboard</a>
+                            <a href="/customer/search" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">Find Rides</a>
+                        {% elif user.role.value == 'driver' %}
+                            <a href="/driver" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">Dashboard</a>
+                            <a href="/driver/earnings" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">Earnings</a>
+                        {% elif user.role.value == 'admin' %}
+                            <a href="/admin" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">Dashboard</a>
+                            <a href="/admin/analytics" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">Analytics</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="/" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">Home</a>
+                        <a href="/customer/search" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">Find Rides</a>
+                    {% endif %}
+                </div>
+                
+                <!-- User Menu -->
+                <div class="flex items-center gap-4">
+                    {% if user %}
+                        <div class="flex items-center gap-3">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-sm font-medium text-apple-gray-600">{{ user.full_name }}</p>
+                                <p class="text-xs text-apple-gray-400 capitalize">{{ user.role.value }}</p>
+                            </div>
+                            <form hx-post="/auth/logout" hx-swap="none">
+                                <button type="submit" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">
+                                    Sign Out
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <a href="/login" class="text-sm font-medium text-apple-gray-500 hover:text-apple-gray-600 transition-colors">Sign In</a>
+                        <a href="/signup" class="btn-apple btn-apple-primary text-sm !py-2 !px-4">Get Started</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="flex-1">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-apple-gray-100 border-t border-apple-gray-200">
+        <div class="max-w-6xl mx-auto px-6 py-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <img src="/static/assets/logo.png" alt="Guzo" class="w-6 h-6 opacity-60">
+                    <span class="text-sm text-apple-gray-400">© 2024 Guzo. All rights reserved.</span>
+                </div>
+                <div class="flex items-center gap-6">
+                    <a href="#" class="text-sm text-apple-gray-400 hover:text-apple-gray-500 transition-colors">Privacy</a>
+                    <a href="#" class="text-sm text-apple-gray-400 hover:text-apple-gray-500 transition-colors">Terms</a>
+                    <a href="#" class="text-sm text-apple-gray-400 hover:text-apple-gray-500 transition-colors">Support</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

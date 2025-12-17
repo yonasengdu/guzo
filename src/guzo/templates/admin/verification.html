@@ -1,0 +1,116 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Driver Verification - Admin - Guzo{% endblock %}
+
+{% block dashboard_content %}
+<!-- Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-semibold text-apple-gray-600">Driver Verification</h1>
+    <p class="text-apple-gray-400 mt-1">Review and approve driver documents</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card-apple p-4">
+        <span class="text-apple-gray-400 text-xs">Pending</span>
+        <p class="text-2xl font-bold text-yellow-500">{{ pending_verifications|length if pending_verifications else 0 }}</p>
+    </div>
+    <div class="card-apple p-4">
+        <span class="text-apple-gray-400 text-xs">Approved</span>
+        <p class="text-2xl font-bold text-apple-green">0</p>
+    </div>
+    <div class="card-apple p-4">
+        <span class="text-apple-gray-400 text-xs">Rejected</span>
+        <p class="text-2xl font-bold text-apple-red">0</p>
+    </div>
+    <div class="card-apple p-4">
+        <span class="text-apple-gray-400 text-xs">Total Drivers</span>
+        <p class="text-2xl font-bold text-apple-gray-600">0</p>
+    </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="card-apple p-4 mb-6">
+    <div class="flex items-center gap-2">
+        <button 
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all bg-yellow-500 text-white"
+        >Pending</button>
+        <button 
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all bg-apple-gray-100 text-apple-gray-600 hover:bg-apple-gray-200"
+        >Approved</button>
+        <button 
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all bg-apple-gray-100 text-apple-gray-600 hover:bg-apple-gray-200"
+        >All</button>
+    </div>
+</div>
+
+<!-- Verifications List -->
+<div id="verifications-list" class="space-y-4">
+    {% if pending_verifications %}
+    {% for v in pending_verifications %}
+    <div class="card-apple p-6" id="verification-{{ v.id }}">
+        <div class="flex items-start justify-between">
+            <div class="flex items-start gap-4">
+                <!-- Profile Photo -->
+                <div class="w-16 h-16 bg-apple-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
+                    <span class="text-2xl font-medium text-apple-gray-400">{{ v.user_name[0] if v.user_name else '?' }}</span>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-apple-gray-600">{{ v.user_name or 'Unknown' }}</h3>
+                    <p class="text-sm text-apple-gray-400">{{ v.document_type.value }}</p>
+                    <p class="text-xs text-apple-gray-400 mt-1">Submitted {{ v.submitted_at.strftime('%b %d, %Y %H:%M') }}</p>
+                    
+                    <!-- Documents -->
+                    <div class="flex items-center gap-4 mt-3">
+                        {% if v.document_url %}
+                        <a href="{{ v.document_url }}" target="_blank" class="text-sm text-apple-blue hover:underline">📄 View Document</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-end gap-2">
+                <!-- Status Badge -->
+                <span id="status-{{ v.id }}">
+                    {% if v.status.value == 'pending' %}
+                    <span class="badge-apple badge-warning">Pending</span>
+                    {% elif v.status.value == 'approved' %}
+                    <span class="badge-apple badge-success">Approved</span>
+                    {% else %}
+                    <span class="badge-apple badge-error">Rejected</span>
+                    {% endif %}
+                </span>
+                
+                <!-- Actions -->
+                {% if v.status.value == 'pending' %}
+                <div class="flex items-center gap-2 mt-2">
+                    <button 
+                        class="text-sm text-apple-green hover:underline"
+                        hx-post="/admin/verification/{{ v.id }}/approve"
+                        hx-swap="none"
+                        hx-on::after-request="location.reload()"
+                    >Approve</button>
+                    
+                    <button 
+                        class="text-sm text-apple-red hover:underline"
+                        hx-post="/admin/verification/{{ v.id }}/reject"
+                        hx-swap="none"
+                        hx-on::after-request="location.reload()"
+                    >Reject</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card-apple p-12 text-center">
+        <svg class="w-16 h-16 text-apple-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="text-apple-gray-400">No pending verifications</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

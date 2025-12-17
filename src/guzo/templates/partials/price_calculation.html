@@ -1,0 +1,29 @@
+<div class="p-4 bg-apple-gray-50 rounded-xl">
+    <div class="flex items-center justify-between mb-2">
+        <span class="text-apple-gray-600">{{ origin }} → {{ destination }}</span>
+    </div>
+    
+    <div class="space-y-2">
+        <div class="flex justify-between text-sm">
+            <span class="text-apple-gray-500">Base Price:</span>
+            <span class="text-apple-gray-700">{{ calculation.base_price }} ETB</span>
+        </div>
+        
+        {% if calculation.is_surge_active %}
+        <div class="flex justify-between text-sm">
+            <span class="text-orange-500">Surge ({{ calculation.surge_reason|replace('_', ' ')|title }}):</span>
+            <span class="text-orange-500">{{ calculation.surge_multiplier }}x</span>
+        </div>
+        {% endif %}
+        
+        <div class="flex justify-between pt-2 border-t border-apple-gray-200">
+            <span class="font-medium text-apple-gray-900">Final Price:</span>
+            <span class="font-bold text-apple-gray-900 text-lg">{{ calculation.final_price }} ETB</span>
+        </div>
+    </div>
+    
+    {% if calculation.is_surge_active %}
+    <p class="text-xs text-orange-500 mt-2">⚡ Surge pricing is currently active</p>
+    {% endif %}
+</div>
+

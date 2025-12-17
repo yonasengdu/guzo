@@ -1,0 +1,47 @@
+{% if surges %}
+<div class="space-y-3">
+    {% for surge in surges %}
+    <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl" id="surge-{{ surge.id }}">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="font-medium text-apple-gray-900">{{ surge.route_key }}</span>
+                <span class="text-2xl font-bold text-orange-500">{{ surge.multiplier }}x</span>
+            </div>
+            <p class="text-sm text-apple-gray-500 mt-1">
+                {{ surge.reason.value|replace('_', ' ')|title }}
+                {% if surge.description %} - {{ surge.description }}{% endif %}
+            </p>
+            <p class="text-xs text-apple-gray-400 mt-1">
+                {{ surge.start_time.strftime('%b %d, %H:%M') }} - {{ surge.end_time.strftime('%b %d, %H:%M') }}
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            {% if surge.is_active %}
+            <span class="badge-apple badge-success">Active</span>
+            <button 
+                class="text-sm text-yellow-600 hover:underline"
+                hx-post="/pricing/surges/{{ surge.id }}/deactivate"
+                hx-target="#surge-{{ surge.id }}"
+                hx-swap="outerHTML"
+            >Deactivate</button>
+            {% else %}
+            <span class="badge-apple badge-warning">Inactive</span>
+            {% endif %}
+            <button 
+                class="text-sm text-red-500 hover:underline"
+                hx-delete="/pricing/surges/{{ surge.id }}"
+                hx-target="#surge-{{ surge.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Delete this surge?"
+            >Delete</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-8">
+    <p class="text-apple-gray-500">No surge multipliers active</p>
+    <p class="text-apple-gray-400 text-sm mt-1">Add surges for special events or high demand periods</p>
+</div>
+{% endif %}
+
