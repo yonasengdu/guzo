@@ -1,0 +1,108 @@
+<!-- Verification Detail Partial (Modal Content) -->
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-apple-gray-600">Verification Details</h2>
+        <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="text-apple-gray-400 hover:text-apple-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+    
+    {% if verification and driver %}
+    <!-- Driver Info -->
+    <div class="flex items-start gap-4 mb-6">
+        <div class="w-20 h-20 bg-apple-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
+            {% if verification.profile_photo %}
+            <img src="/{{ verification.profile_photo }}" alt="{{ driver.full_name }}" class="w-full h-full object-cover">
+            {% else %}
+            <span class="text-2xl font-semibold text-apple-gray-600">{{ driver.full_name[0] }}</span>
+            {% endif %}
+        </div>
+        
+        <div>
+            <h3 class="text-lg font-semibold text-apple-gray-600">{{ driver.full_name }}</h3>
+            <p class="text-apple-gray-400">{{ driver.email }}</p>
+            <p class="text-apple-gray-400">{{ driver.phone or 'No phone' }}</p>
+            
+            <div class="flex items-center gap-2 mt-2">
+                {% if verification.status.value == 'pending' %}
+                <span class="badge-apple badge-warning">Pending</span>
+                {% elif verification.status.value == 'under_review' %}
+                <span class="badge-apple badge-info">Under Review</span>
+                {% elif verification.status.value == 'approved' %}
+                <span class="badge-apple badge-success">Approved</span>
+                {% elif verification.status.value == 'rejected' %}
+                <span class="badge-apple badge-error">Rejected</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Documents Section -->
+    <div class="space-y-4 mb-6">
+        <h4 class="font-medium text-apple-gray-600">Submitted Documents</h4>
+        
+        <div class="grid grid-cols-2 gap-4">
+            {% if verification.license_document %}
+            <div class="card-apple p-4">
+                <p class="text-xs text-apple-gray-400 mb-2">Driver's License</p>
+                <a href="/{{ verification.license_document }}" target="_blank" class="text-apple-blue hover:underline text-sm">
+                    View Document →
+                </a>
+                {% if verification.license_number %}
+                <p class="text-xs text-apple-gray-500 mt-1">License #: {{ verification.license_number }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if verification.vehicle_registration %}
+            <div class="card-apple p-4">
+                <p class="text-xs text-apple-gray-400 mb-2">Vehicle Registration</p>
+                <a href="/{{ verification.vehicle_registration }}" target="_blank" class="text-apple-blue hover:underline text-sm">
+                    View Document →
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Rejection Form -->
+    {% if verification.status.value in ['pending', 'under_review'] %}
+    <form hx-post="/verification/admin/{{ verification.id }}/reject" hx-swap="none" hx-on::after-request="document.getElementById('admin-modal').classList.add('hidden'); location.reload();" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-apple-gray-500 mb-2">Rejection Reason</label>
+            <select name="reason" class="select-apple" required>
+                <option value="">Select reason</option>
+                <option value="Blurry or unreadable documents">Blurry or unreadable documents</option>
+                <option value="Expired license">Expired license</option>
+                <option value="Mismatched information">Mismatched information</option>
+                <option value="Missing required documents">Missing required documents</option>
+                <option value="Fraudulent documents">Fraudulent documents</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-apple-gray-500 mb-2">Additional Notes</label>
+            <textarea name="notes" rows="3" class="input-apple" placeholder="Add any additional notes..."></textarea>
+        </div>
+        
+        <div class="flex gap-3">
+            <button type="button" onclick="document.getElementById('admin-modal').classList.add('hidden')" class="btn-apple btn-apple-secondary flex-1">
+                Cancel
+            </button>
+            <button type="submit" class="btn-apple flex-1" style="background-color: #ff3b30; color: white;">
+                Reject Verification
+            </button>
+        </div>
+    </form>
+    {% endif %}
+    
+    {% else %}
+    <div class="text-center py-8">
+        <p class="text-apple-gray-400">Verification not found</p>
+    </div>
+    {% endif %}
+</div>
+

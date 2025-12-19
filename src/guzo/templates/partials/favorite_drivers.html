@@ -7,7 +7,7 @@
                 <span class="text-lg font-medium text-apple-gray-600">{{ driver.driver_name[0] if driver.driver_name else '?' }}</span>
             </div>
             <div>
-                <p class="font-medium text-apple-gray-900">{{ driver.driver_name or 'Unknown Driver' }}</p>
+                <p class="font-medium text-apple-gray-600">{{ driver.driver_name or 'Unknown Driver' }}</p>
                 <div class="flex items-center gap-2 text-sm text-apple-gray-500">
                     {% if driver.driver_rating %}
                     <span class="flex items-center gap-1">

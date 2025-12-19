@@ -1,0 +1,56 @@
+<!-- Earnings Content Partial - for HTMX updates -->
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="card-apple p-6">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-apple-gray-400 text-sm">Total Revenue</span>
+        </div>
+        <p class="text-3xl font-bold text-apple-gray-600">{{ earnings.total_revenue|round(2) if earnings else 0 }} <span class="text-lg font-normal text-apple-gray-400">ETB</span></p>
+    </div>
+    
+    <div class="card-apple p-6">
+        <span class="text-apple-gray-400 text-sm">Completed Trips</span>
+        <p class="text-3xl font-bold text-apple-gray-600 mt-2">{{ earnings.total_trips if earnings else 0 }}</p>
+    </div>
+    
+    <div class="card-apple p-6">
+        <span class="text-apple-gray-400 text-sm">Total Bookings</span>
+        <p class="text-3xl font-bold text-apple-gray-600 mt-2">{{ earnings.total_bookings if earnings else 0 }}</p>
+    </div>
+    
+    <div class="card-apple p-6">
+        <span class="text-apple-gray-400 text-sm">Avg per Trip</span>
+        <p class="text-3xl font-bold text-apple-gray-600 mt-2">{{ (earnings.total_revenue / earnings.total_trips)|round(2) if earnings and earnings.total_trips else 0 }} <span class="text-lg font-normal text-apple-gray-400">ETB</span></p>
+    </div>
+</div>
+
+<!-- Revenue Chart -->
+<div class="card-apple p-6 mb-8">
+    <h2 class="text-lg font-semibold text-apple-gray-600 mb-4">Revenue Overview</h2>
+    <div class="h-64 flex items-center justify-center">
+        <p class="text-apple-gray-400">Chart data will appear as you complete trips</p>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card-apple p-6">
+    <h2 class="text-lg font-semibold text-apple-gray-600 mb-4">Recent Earnings</h2>
+    {% if earnings and earnings.total_trips > 0 %}
+    <div class="space-y-3">
+        <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-apple-green/10 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-apple-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <span class="text-apple-gray-600 font-medium">Trip Completed</span>
+            </div>
+            <span class="text-apple-gray-600 font-semibold">+{{ (earnings.total_revenue / earnings.total_trips)|round(2) }} ETB</span>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-apple-gray-400 text-center py-8">No earnings data yet. Complete your first trip to see your earnings here.</p>
+    {% endif %}
+</div>
+

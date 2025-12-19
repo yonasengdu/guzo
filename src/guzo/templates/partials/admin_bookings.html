@@ -1,0 +1,88 @@
+<!-- Admin Bookings List Partial -->
+{% if bookings %}
+<div class="overflow-x-auto">
+    <table class="table-apple w-full">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Route</th>
+                <th>Date</th>
+                <th>Seats</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr id="booking-row-{{ booking.id }}">
+                <td>
+                    <div>
+                        <p class="font-medium text-apple-gray-600">{{ booking.customer_name }}</p>
+                        <p class="text-sm text-apple-gray-400">{{ booking.customer_phone }}</p>
+                    </div>
+                </td>
+                <td>
+                    <div class="flex items-center gap-2">
+                        <span class="text-apple-gray-600">{{ booking.pickup_location }}</span>
+                        <svg class="w-4 h-4 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                        <span class="text-apple-gray-600">{{ booking.dropoff_location }}</span>
+                    </div>
+                </td>
+                <td class="text-apple-gray-500">{{ booking.scheduled_time.strftime('%b %d, %H:%M') }}</td>
+                <td class="text-apple-gray-500">{{ booking.seats_booked }}</td>
+                <td class="font-medium text-apple-gray-600">{{ booking.price|int if booking.price else '-' }} ETB</td>
+                <td>
+                    {% if booking.status.value == 'pending' %}
+                    <span class="badge-apple badge-warning">Pending</span>
+                    {% elif booking.status.value == 'confirmed' %}
+                    <span class="badge-apple badge-info">Confirmed</span>
+                    {% elif booking.status.value == 'completed' %}
+                    <span class="badge-apple badge-success">Completed</span>
+                    {% elif booking.status.value == 'cancelled' %}
+                    <span class="badge-apple badge-error">Cancelled</span>
+                    {% else %}
+                    <span class="badge-apple">{{ booking.status.value|capitalize }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="flex items-center gap-2">
+                        {% if booking.status.value == 'pending' %}
+                        <button 
+                            class="text-sm text-apple-green hover:underline"
+                            hx-post="/admin/booking/{{ booking.id }}/confirm"
+                            hx-swap="innerHTML"
+                            hx-target="closest td"
+                        >
+                            Confirm
+                        </button>
+                        {% endif %}
+                        {% if booking.status.value not in ['completed', 'cancelled'] %}
+                        <button 
+                            class="text-sm text-apple-red hover:underline"
+                            hx-post="/admin/booking/{{ booking.id }}/cancel"
+                            hx-swap="innerHTML"
+                            hx-target="closest td"
+                            hx-confirm="Cancel this booking?"
+                        >
+                            Cancel
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card-apple p-12 text-center">
+    <svg class="w-16 h-16 text-apple-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+    </svg>
+    <p class="text-apple-gray-400">No bookings found</p>
+</div>
+{% endif %}
+

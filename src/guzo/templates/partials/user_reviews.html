@@ -8,7 +8,7 @@
                     <span class="text-sm font-medium text-apple-gray-600">{{ review.reviewer_name[0] if review.reviewer_name else '?' }}</span>
                 </div>
                 <div>
-                    <p class="font-medium text-apple-gray-900 text-sm">{{ review.reviewer_name or 'Anonymous' }}</p>
+                    <p class="font-medium text-apple-gray-600 text-sm">{{ review.reviewer_name or 'Anonymous' }}</p>
                     <p class="text-xs text-apple-gray-500">{{ review.created_at.strftime('%b %d, %Y') }}</p>
                 </div>
             </div>

@@ -1,0 +1,106 @@
+<!-- Driver Trips List Partial -->
+{% if trips %}
+<div class="space-y-4">
+    {% for trip in trips %}
+    <div class="card-apple p-6" id="trip-{{ trip.id }}">
+        <div class="flex items-start justify-between">
+            <div class="flex-1">
+                <!-- Route -->
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-apple-green rounded-full"></div>
+                        <span class="font-medium text-apple-gray-600">{{ trip.origin }}</span>
+                    </div>
+                    <svg class="w-4 h-4 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-apple-red rounded-full"></div>
+                        <span class="font-medium text-apple-gray-600">{{ trip.destination }}</span>
+                    </div>
+                </div>
+                
+                <!-- Details -->
+                <div class="flex items-center gap-4 text-sm text-apple-gray-400 mb-3">
+                    <span>{{ trip.departure_time.strftime('%b %d, %Y') }}</span>
+                    <span class="text-apple-gray-300">•</span>
+                    <span>{{ trip.departure_time.strftime('%H:%M') }}</span>
+                    <span class="text-apple-gray-300">•</span>
+                    <span>{{ trip.booked_seats }}/{{ trip.available_seats }} seats booked</span>
+                </div>
+                
+                <!-- Pricing -->
+                <div class="flex items-center gap-4 text-sm">
+                    <span class="text-apple-gray-500">Per seat: <span class="font-semibold text-apple-gray-600">{{ trip.price_per_seat|int }} ETB</span></span>
+                    <span class="text-apple-gray-300">•</span>
+                    <span class="text-apple-gray-500">Whole car: <span class="font-semibold text-apple-gray-600">{{ trip.whole_car_price|int }} ETB</span></span>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-end gap-2">
+                <!-- Status Badge -->
+                {% if trip.status.value == 'scheduled' %}
+                <span class="badge-apple badge-info">Scheduled</span>
+                {% elif trip.status.value == 'in_progress' %}
+                <span class="badge-apple badge-warning">In Progress</span>
+                {% elif trip.status.value == 'completed' %}
+                <span class="badge-apple badge-success">Completed</span>
+                {% elif trip.status.value == 'cancelled' %}
+                <span class="badge-apple badge-error">Cancelled</span>
+                {% else %}
+                <span class="badge-apple">{{ trip.status.value|capitalize }}</span>
+                {% endif %}
+                
+                <!-- Actions -->
+                <div class="flex items-center gap-2 mt-2">
+                    {% if trip.status.value == 'scheduled' %}
+                    <button 
+                        class="text-sm text-apple-blue hover:underline"
+                        hx-post="/driver/trip/{{ trip.id }}/update"
+                        hx-vals='{"status": "in_progress"}'
+                        hx-target="#trip-{{ trip.id }}"
+                        hx-swap="outerHTML"
+                    >
+                        Start Trip
+                    </button>
+                    <span class="text-apple-gray-300">•</span>
+                    {% elif trip.status.value == 'in_progress' %}
+                    <button 
+                        class="text-sm text-apple-green hover:underline"
+                        hx-post="/driver/trip/{{ trip.id }}/update"
+                        hx-vals='{"status": "completed"}'
+                        hx-target="#trip-{{ trip.id }}"
+                        hx-swap="outerHTML"
+                    >
+                        Complete
+                    </button>
+                    <span class="text-apple-gray-300">•</span>
+                    {% endif %}
+                    
+                    {% if trip.status.value in ['scheduled', 'in_progress'] %}
+                    <button 
+                        class="text-sm text-apple-red hover:underline"
+                        hx-post="/driver/trip/{{ trip.id }}/delete"
+                        hx-target="#trip-{{ trip.id }}"
+                        hx-swap="outerHTML"
+                        hx-confirm="Cancel this trip?"
+                    >
+                        Cancel
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card-apple p-12 text-center">
+    <svg class="w-16 h-16 text-apple-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+    </svg>
+    <p class="text-apple-gray-400">No trips yet</p>
+    <p class="text-apple-gray-400 text-sm mt-1">Create your first trip to start accepting bookings</p>
+</div>
+{% endif %}
+

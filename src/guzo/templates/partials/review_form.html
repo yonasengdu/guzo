@@ -8,7 +8,7 @@
             <span class="text-lg font-medium text-apple-gray-600">{{ reviewee.full_name[0] if reviewee else '?' }}</span>
         </div>
         <div>
-            <p class="font-medium text-apple-gray-900">{{ reviewee.full_name if reviewee else 'Unknown' }}</p>
+            <p class="font-medium text-apple-gray-600">{{ reviewee.full_name if reviewee else 'Unknown' }}</p>
             <p class="text-sm text-apple-gray-500">{{ reviewee.role.value|capitalize if reviewee else '' }}</p>
         </div>
     </div>

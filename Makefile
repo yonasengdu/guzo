@@ -25,10 +25,10 @@ run:
 test:
 	poetry run pytest
 
-docker-up:
-	docker-compose up -d
+up:
+	docker-compose up --build
 
-docker-down:
+down:
 	docker-compose down
 
 docker-logs:

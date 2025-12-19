@@ -2,11 +2,11 @@
     {% for trip in trips %}
     <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
         <div>
-            <p class="font-medium text-apple-gray-900">{{ trip.origin }} → {{ trip.destination }}</p>
+            <p class="font-medium text-apple-gray-600">{{ trip.origin }} → {{ trip.destination }}</p>
             <p class="text-sm text-apple-gray-500">{{ trip.departure_time.strftime('%b %d, %Y at %H:%M') }}</p>
         </div>
         <div class="text-right">
-            <p class="text-sm font-medium text-apple-gray-900">{{ trip.remaining_seats }} / {{ trip.available_seats }} seats</p>
+            <p class="text-sm font-medium text-apple-gray-600">{{ trip.remaining_seats }} / {{ trip.available_seats }} seats</p>
             <span class="badge-apple badge-info text-xs">{{ trip.status.value|capitalize }}</span>
         </div>
     </div>

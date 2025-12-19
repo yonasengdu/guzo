@@ -1,3 +1,4 @@
+<!-- Customer History Partial - for HTMX updates -->
 {% if bookings %}
 <div class="space-y-4">
     {% for booking in bookings %}
@@ -7,20 +8,20 @@
                 <!-- Route -->
                 <div class="flex items-center gap-3 mb-3">
                     <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span class="text-apple-gray-900 font-medium">{{ booking.pickup_location }}</span>
+                        <div class="w-3 h-3 bg-apple-green rounded-full"></div>
+                        <span class="text-apple-gray-600 font-medium">{{ booking.pickup_location }}</span>
                     </div>
                     <svg class="w-4 h-4 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
                     </svg>
                     <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span class="text-apple-gray-900 font-medium">{{ booking.dropoff_location }}</span>
+                        <div class="w-3 h-3 bg-apple-red rounded-full"></div>
+                        <span class="text-apple-gray-600 font-medium">{{ booking.dropoff_location }}</span>
                     </div>
                 </div>
                 
                 <!-- Details -->
-                <div class="flex items-center gap-4 text-sm text-apple-gray-500">
+                <div class="flex items-center gap-4 text-sm text-apple-gray-400">
                     <span>{{ booking.scheduled_time.strftime('%b %d, %Y') }}</span>
                     <span class="text-apple-gray-300">•</span>
                     <span>{{ booking.scheduled_time.strftime('%H:%M') }}</span>
@@ -28,11 +29,11 @@
                     <span>{{ booking.seats_booked }} seat{% if booking.seats_booked > 1 %}s{% endif %}</span>
                     {% if booking.price %}
                     <span class="text-apple-gray-300">•</span>
-                    <span class="font-medium text-apple-gray-700">{{ booking.price }} ETB</span>
+                    <span class="font-medium text-apple-gray-600">{{ booking.price|int }} ETB</span>
                     {% endif %}
                 </div>
                 
-                <!-- Driver Info -->
+                <!-- Driver Info (if completed) -->
                 {% if booking.driver_name %}
                 <div class="mt-3 pt-3 border-t border-apple-gray-100">
                     <div class="flex items-center gap-2">
@@ -40,11 +41,11 @@
                             <span class="text-sm font-medium text-apple-gray-600">{{ booking.driver_name[0] }}</span>
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-apple-gray-900">{{ booking.driver_name }}</p>
+                            <p class="text-sm font-medium text-apple-gray-600">{{ booking.driver_name }}</p>
                             {% if booking.driver_rating %}
                             <div class="flex items-center gap-1">
                                 <span class="text-yellow-500">★</span>
-                                <span class="text-xs text-apple-gray-500">{{ booking.driver_rating }}</span>
+                                <span class="text-xs text-apple-gray-400">{{ booking.driver_rating }}</span>
                             </div>
                             {% endif %}
                         </div>
@@ -67,15 +68,18 @@
                 
                 <!-- Actions -->
                 <div class="flex items-center gap-2 mt-2">
+                    <!-- Rebook Button -->
                     <button 
                         class="text-sm text-apple-blue hover:underline"
                         hx-post="/customer/rebook/{{ booking.id }}"
+                        hx-target="#rebook-result"
                         hx-swap="innerHTML"
                     >
                         Rebook
                     </button>
                     
-                    {% if booking.status.value == 'completed' and not booking.customer_review_id and booking.assigned_driver_id %}
+                    <!-- Review Button (if completed and not reviewed) -->
+                    {% if booking.status.value == 'completed' and not booking.review_id and booking.assigned_driver_id %}
                     <span class="text-apple-gray-300">•</span>
                     <button 
                         class="text-sm text-apple-blue hover:underline"
@@ -87,6 +91,17 @@
                         Leave Review
                     </button>
                     {% endif %}
+                    
+                    <!-- Save Route -->
+                    <span class="text-apple-gray-300">•</span>
+                    <button 
+                        class="text-sm text-apple-gray-400 hover:text-apple-blue"
+                        hx-post="/customer/favorite/route"
+                        hx-vals='{"origin": "{{ booking.pickup_location }}", "destination": "{{ booking.dropoff_location }}"}'
+                        hx-swap="none"
+                    >
+                        ♡ Save Route
+                    </button>
                 </div>
             </div>
         </div>
@@ -95,7 +110,13 @@
 </div>
 {% else %}
 <div class="card-apple p-12 text-center">
-    <p class="text-apple-gray-500">No trips found</p>
+    <svg class="w-16 h-16 text-apple-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <p class="text-apple-gray-400">No trip history yet</p>
+    <p class="text-apple-gray-400 text-sm mt-1">Book your first trip to see it here</p>
+    <a href="/customer/search" class="btn-apple btn-apple-primary mt-4 inline-block">
+        Search for Trips
+    </a>
 </div>
 {% endif %}
-

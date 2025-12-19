@@ -45,6 +45,41 @@ async def admin_dashboard(
             "trips": trips,
             "bookings": bookings,
             "stats": stats,
+            "active_tab": "dashboard",
+        },
+    )
+
+
+@router.get("/users", response_class=HTMLResponse)
+async def admin_users_page(
+    request: Request,
+    user: User = Depends(get_current_admin),
+    role: Optional[str] = None,
+):
+    """Admin users management page."""
+    if role:
+        users = await User.find(User.role == UserRole(role)).to_list()
+    else:
+        users = await User.find_all().to_list()
+    
+    # Get counts for tabs
+    all_count = await User.count()
+    driver_count = await User.find(User.role == UserRole.DRIVER).count()
+    rider_count = await User.find(User.role == UserRole.RIDER).count()
+    
+    return templates.TemplateResponse(
+        "admin/users.html",
+        {
+            "request": request,
+            "user": user,
+            "users": users,
+            "role_filter": role,
+            "counts": {
+                "all": all_count,
+                "drivers": driver_count,
+                "riders": rider_count,
+            },
+            "active_tab": "users",
         },
     )
 
@@ -71,14 +106,26 @@ async def get_all_trips(
     request: Request,
     user: User = Depends(get_current_admin),
 ):
-    """Get all trips (HTMX partial)."""
+    """Get all trips page or HTMX partial."""
     trips = await TripService.get_upcoming_trips(limit=100)
     
+    # Return partial for HTMX requests
+    if request.headers.get("HX-Request"):
+        return templates.TemplateResponse(
+            "partials/admin_trips.html",
+            {
+                "request": request,
+                "trips": trips,
+            },
+        )
+    
     return templates.TemplateResponse(
-        "partials/admin_trips.html",
+        "admin/trips.html",
         {
             "request": request,
+            "user": user,
             "trips": trips,
+            "active_tab": "trips",
         },
     )
 
@@ -372,12 +419,23 @@ async def cancel_booking_admin(
 async def admin_analytics_page(
     request: Request,
     user: User = Depends(get_current_admin),
-    period: str = "month",
+    period: str = "week",
 ):
     """Admin analytics dashboard page."""
     from src.guzo.analytics.service import AnalyticsService
     
     stats = await AnalyticsService.get_platform_stats(period)
+    
+    # Return partial for HTMX requests
+    if request.headers.get("HX-Request"):
+        return templates.TemplateResponse(
+            "partials/analytics_content.html",
+            {
+                "request": request,
+                "stats": stats,
+                "period": period,
+            },
+        )
     
     return templates.TemplateResponse(
         "admin/analytics.html",
@@ -386,6 +444,7 @@ async def admin_analytics_page(
             "user": user,
             "stats": stats,
             "period": period,
+            "active_tab": "analytics",
         },
     )
 
@@ -408,6 +467,7 @@ async def admin_verification_page(
             "user": user,
             "verifications": verifications,
             "stats": stats,
+            "active_tab": "verification",
         },
     )
 
@@ -426,6 +486,7 @@ async def admin_pricing_page(
             "request": request,
             "user": user,
             "locations": LOCATIONS,
+            "active_tab": "pricing",
         },
     )
 

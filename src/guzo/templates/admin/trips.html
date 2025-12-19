@@ -1,0 +1,28 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Trips - Admin - Guzo{% endblock %}
+
+{% block dashboard_content %}
+<!-- Header -->
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <h1 class="text-3xl font-semibold text-apple-gray-600">Trip Management</h1>
+        <p class="text-apple-gray-400 mt-1">View and manage all trips on the platform</p>
+    </div>
+</div>
+
+<!-- Trips List -->
+<div id="trips-content" class="card-apple overflow-hidden">
+    {% include "partials/admin_trips.html" %}
+</div>
+
+<!-- Admin Modal (for trip details) -->
+<div id="admin-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div id="modal-content">
+            <!-- Content loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+

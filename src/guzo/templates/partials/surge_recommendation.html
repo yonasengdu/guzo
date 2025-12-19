@@ -9,15 +9,15 @@
     <div class="space-y-2 text-sm">
         <div class="flex justify-between">
             <span class="text-apple-gray-500">Reason:</span>
-            <span class="text-apple-gray-900">{{ recommendation.reason|replace('_', ' ')|title }}</span>
+            <span class="text-apple-gray-600">{{ recommendation.reason|replace('_', ' ')|title }}</span>
         </div>
         <div class="flex justify-between">
             <span class="text-apple-gray-500">Recent Bookings (24h):</span>
-            <span class="text-apple-gray-900">{{ recommendation.recent_bookings }}</span>
+            <span class="text-apple-gray-600">{{ recommendation.recent_bookings }}</span>
         </div>
         <div class="flex justify-between">
             <span class="text-apple-gray-500">Current Hour:</span>
-            <span class="text-apple-gray-900">{{ recommendation.current_hour }}:00</span>
+            <span class="text-apple-gray-600">{{ recommendation.current_hour }}:00</span>
         </div>
     </div>
     

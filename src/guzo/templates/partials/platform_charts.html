@@ -1,0 +1,100 @@
+<!-- Platform Charts Partial -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Revenue Chart -->
+    <div class="card-apple p-6">
+        <h3 class="text-lg font-semibold text-apple-gray-600 mb-4">Revenue Trend</h3>
+        
+        {% if stats and stats.daily_revenue %}
+        <div class="h-48 relative">
+            <div class="flex items-end justify-between h-40 gap-1">
+                {% for day in stats.daily_revenue %}
+                <div class="flex-1 flex flex-col items-center">
+                    <div 
+                        class="w-full bg-apple-green/80 rounded-t-sm transition-all hover:bg-apple-green"
+                        style="height: {{ (day.amount / stats.max_daily_revenue * 100) if stats.max_daily_revenue else 0 }}%"
+                        title="{{ day.date }}: {{ day.amount|round(2) }} ETB"
+                    ></div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="h-48 flex items-center justify-center">
+            <p class="text-apple-gray-400">No revenue data available</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Bookings Chart -->
+    <div class="card-apple p-6">
+        <h3 class="text-lg font-semibold text-apple-gray-600 mb-4">Bookings Trend</h3>
+        
+        {% if stats and stats.daily_bookings %}
+        <div class="h-48 relative">
+            <div class="flex items-end justify-between h-40 gap-1">
+                {% for day in stats.daily_bookings %}
+                <div class="flex-1 flex flex-col items-center">
+                    <div 
+                        class="w-full bg-apple-blue/80 rounded-t-sm transition-all hover:bg-apple-blue"
+                        style="height: {{ (day.count / stats.max_daily_bookings * 100) if stats.max_daily_bookings else 0 }}%"
+                        title="{{ day.date }}: {{ day.count }} bookings"
+                    ></div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="h-48 flex items-center justify-center">
+            <p class="text-apple-gray-400">No booking data available</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- User Growth -->
+    <div class="card-apple p-6">
+        <h3 class="text-lg font-semibold text-apple-gray-600 mb-4">User Distribution</h3>
+        
+        <div class="space-y-4">
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-apple-gray-500">Drivers</span>
+                    <span class="font-medium text-apple-gray-600">{{ stats.total_drivers if stats else 0 }}</span>
+                </div>
+                <div class="h-2 bg-apple-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-apple-blue rounded-full" style="width: {{ (stats.total_drivers / stats.total_users * 100) if stats and stats.total_users else 0 }}%"></div>
+                </div>
+            </div>
+            
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-apple-gray-500">Riders</span>
+                    <span class="font-medium text-apple-gray-600">{{ stats.total_riders if stats else 0 }}</span>
+                </div>
+                <div class="h-2 bg-apple-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-apple-green rounded-full" style="width: {{ (stats.total_riders / stats.total_users * 100) if stats and stats.total_users else 0 }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trip Status -->
+    <div class="card-apple p-6">
+        <h3 class="text-lg font-semibold text-apple-gray-600 mb-4">Trip Status</h3>
+        
+        <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-apple-gray-50 rounded-xl">
+                <span class="text-apple-gray-500">Scheduled</span>
+                <span class="font-semibold text-apple-gray-600">{{ stats.scheduled_trips if stats else 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-apple-gray-50 rounded-xl">
+                <span class="text-apple-gray-500">Completed</span>
+                <span class="font-semibold text-apple-green">{{ stats.completed_trips if stats else 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-apple-gray-50 rounded-xl">
+                <span class="text-apple-gray-500">Cancelled</span>
+                <span class="font-semibold text-apple-red">{{ stats.cancelled_trips if stats else 0 }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+

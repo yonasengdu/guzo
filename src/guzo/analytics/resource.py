@@ -37,7 +37,7 @@ async def get_driver_earnings(
     earnings = await AnalyticsService.get_driver_earnings(str(user.id), period)
     
     return templates.TemplateResponse(
-        "partials/driver_earnings.html",
+        "partials/earnings_content.html",
         {
             "request": request,
             "earnings": earnings,

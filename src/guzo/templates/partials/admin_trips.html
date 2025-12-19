@@ -1,0 +1,80 @@
+<!-- Admin Trips List Partial -->
+{% if trips %}
+<div class="overflow-x-auto">
+    <table class="table-apple w-full">
+        <thead>
+            <tr>
+                <th>Route</th>
+                <th>Driver</th>
+                <th>Date</th>
+                <th>Seats</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trip in trips %}
+            <tr id="trip-row-{{ trip.id }}">
+                <td>
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-apple-gray-600">{{ trip.origin }}</span>
+                        <svg class="w-4 h-4 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                        <span class="font-medium text-apple-gray-600">{{ trip.destination }}</span>
+                    </div>
+                </td>
+                <td class="text-apple-gray-500">{{ trip.driver_name or 'Unknown' }}</td>
+                <td class="text-apple-gray-500">{{ trip.departure_time.strftime('%b %d, %H:%M') }}</td>
+                <td class="text-apple-gray-500">{{ trip.booked_seats }}/{{ trip.available_seats }}</td>
+                <td class="font-medium text-apple-gray-600">{{ trip.price_per_seat|int }} ETB</td>
+                <td>
+                    {% if trip.status.value == 'scheduled' %}
+                    <span class="badge-apple badge-info">Scheduled</span>
+                    {% elif trip.status.value == 'in_progress' %}
+                    <span class="badge-apple badge-warning">In Progress</span>
+                    {% elif trip.status.value == 'completed' %}
+                    <span class="badge-apple badge-success">Completed</span>
+                    {% elif trip.status.value == 'cancelled' %}
+                    <span class="badge-apple badge-error">Cancelled</span>
+                    {% else %}
+                    <span class="badge-apple">{{ trip.status.value|capitalize }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="flex items-center gap-2">
+                        <button 
+                            class="text-sm text-apple-blue hover:underline"
+                            hx-get="/admin/trip/{{ trip.id }}"
+                            hx-target="#modal-content"
+                            hx-swap="innerHTML"
+                            onclick="document.getElementById('admin-modal').classList.remove('hidden')"
+                        >
+                            View
+                        </button>
+                        <button 
+                            class="text-sm text-apple-red hover:underline"
+                            hx-delete="/admin/trip/{{ trip.id }}"
+                            hx-target="#trip-row-{{ trip.id }}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Delete this trip?"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card-apple p-12 text-center">
+    <svg class="w-16 h-16 text-apple-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <p class="text-apple-gray-400">No trips found</p>
+</div>
+{% endif %}
+

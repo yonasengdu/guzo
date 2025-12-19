@@ -16,12 +16,12 @@
             {% for rule in rules %}
             <tr class="border-b border-apple-gray-50 hover:bg-apple-gray-50" id="rule-{{ rule.id }}">
                 <td class="py-3 px-4">
-                    <span class="font-medium text-apple-gray-900">{{ rule.origin }} → {{ rule.destination }}</span>
+                    <span class="font-medium text-apple-gray-600">{{ rule.origin }} → {{ rule.destination }}</span>
                 </td>
                 <td class="py-3 px-4 text-apple-gray-600">{{ rule.base_fare }} ETB</td>
                 <td class="py-3 px-4 text-apple-gray-600">{{ rule.per_km_rate }} ETB</td>
                 <td class="py-3 px-4 text-apple-gray-600">{{ rule.estimated_distance_km }} km</td>
-                <td class="py-3 px-4 font-semibold text-apple-gray-900">{{ rule.calculated_price }} ETB</td>
+                <td class="py-3 px-4 font-semibold text-apple-gray-600">{{ rule.calculated_price }} ETB</td>
                 <td class="py-3 px-4">
                     {% if rule.is_active %}
                     <span class="badge-apple badge-success">Active</span>

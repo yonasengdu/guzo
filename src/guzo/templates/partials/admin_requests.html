@@ -1,0 +1,78 @@
+<!-- Admin Charter Requests Partial -->
+{% if pending_requests %}
+<div class="space-y-4">
+    {% for request in pending_requests %}
+    <div class="card-apple p-6" id="request-{{ request.id }}">
+        <div class="flex items-start justify-between">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="badge-apple badge-warning">Charter Request</span>
+                    <span class="text-sm text-apple-gray-400">{{ request.created_at.strftime('%b %d, %Y at %H:%M') }}</span>
+                </div>
+                
+                <!-- Customer Info -->
+                <div class="mb-4">
+                    <p class="font-semibold text-apple-gray-600">{{ request.customer_name }}</p>
+                    <p class="text-sm text-apple-gray-400">{{ request.customer_phone }}</p>
+                </div>
+                
+                <!-- Route -->
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-apple-green rounded-full"></div>
+                        <span class="text-apple-gray-600">{{ request.pickup_location }}</span>
+                    </div>
+                    <svg class="w-4 h-4 text-apple-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-apple-red rounded-full"></div>
+                        <span class="text-apple-gray-600">{{ request.dropoff_location }}</span>
+                    </div>
+                </div>
+                
+                <p class="text-sm text-apple-gray-500">
+                    Requested for: {{ request.scheduled_time.strftime('%b %d, %Y at %H:%M') }}
+                </p>
+                
+                {% if request.notes %}
+                <p class="text-sm text-apple-gray-400 mt-2 italic">{{ request.notes }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="ml-4">
+                <!-- Assign Form -->
+                <form hx-post="/admin/request/{{ request.id }}/assign" hx-target="#request-{{ request.id }}" hx-swap="outerHTML" class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-apple-gray-500 mb-1">Assign Driver</label>
+                        <select name="driver_id" class="select-apple text-sm" required>
+                            <option value="">Select driver</option>
+                            {% for driver in drivers %}
+                            <option value="{{ driver.id }}">{{ driver.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-apple-gray-500 mb-1">Price (ETB)</label>
+                        <input type="number" name="price" class="input-apple text-sm" placeholder="Enter price">
+                    </div>
+                    
+                    <button type="submit" class="btn-apple btn-apple-primary text-sm w-full !py-2">
+                        Assign Driver
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card-apple p-12 text-center">
+    <svg class="w-16 h-16 text-apple-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <p class="text-apple-gray-400">No pending requests</p>
+</div>
+{% endif %}
+

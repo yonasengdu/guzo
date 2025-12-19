@@ -34,7 +34,7 @@ async def driver_dashboard(
             "trips": trips,
             "bookings": bookings,
             "pending_requests": pending_requests,
-            "active_tab": "trips",
+            "active_tab": "dashboard",
         },
     )
 
@@ -50,20 +50,37 @@ async def toggle_online_status(
     await user.save()
     
     if request.headers.get("HX-Request"):
-        status_class = "badge-success" if user.is_online else "badge-error"
-        status_text = "Online" if user.is_online else "Offline"
-        return HTMLResponse(
-            f'''
-            <button 
-                hx-post="/driver/toggle-status"
-                hx-swap="outerHTML"
-                class="btn btn-lg {'btn-success' if user.is_online else 'btn-error'}"
-            >
-                <span class="badge {status_class}">{status_text}</span>
-                Click to go {'Offline' if user.is_online else 'Online'}
-            </button>
-            '''
-        )
+        if user.is_online:
+            return HTMLResponse('''
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        class="sr-only peer" 
+                        checked
+                        hx-post="/driver/toggle-status"
+                        hx-swap="outerHTML"
+                        hx-target="closest label"
+                        hx-trigger="change"
+                    >
+                    <div class="w-14 h-7 bg-apple-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-apple-green"></div>
+                    <span class="ml-3 text-sm font-medium text-apple-gray-600">Online</span>
+                </label>
+            ''')
+        else:
+            return HTMLResponse('''
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        class="sr-only peer"
+                        hx-post="/driver/toggle-status"
+                        hx-swap="outerHTML"
+                        hx-target="closest label"
+                        hx-trigger="change"
+                    >
+                    <div class="w-14 h-7 bg-apple-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-apple-green"></div>
+                    <span class="ml-3 text-sm font-medium text-apple-gray-600">Offline</span>
+                </label>
+            ''')
     
     return RedirectResponse(url="/driver", status_code=303)
 
@@ -266,12 +283,23 @@ async def accept_request(
 async def driver_earnings_page(
     request: Request,
     user: User = Depends(get_current_driver),
-    period: str = "month",
+    period: str = "week",
 ):
     """Driver earnings page."""
     from src.guzo.analytics.service import AnalyticsService
     
     earnings = await AnalyticsService.get_driver_earnings(str(user.id), period)
+    
+    # Return partial for HTMX requests
+    if request.headers.get("HX-Request"):
+        return templates.TemplateResponse(
+            "partials/earnings_content.html",
+            {
+                "request": request,
+                "earnings": earnings,
+                "period": period,
+            },
+        )
     
     return templates.TemplateResponse(
         "driver/earnings.html",
@@ -280,6 +308,7 @@ async def driver_earnings_page(
             "user": user,
             "earnings": earnings,
             "period": period,
+            "active_tab": "earnings",
         },
     )
 
@@ -290,11 +319,15 @@ async def driver_schedule_page(
     user: User = Depends(get_current_driver),
 ):
     """Driver schedule management page."""
+    trips = await TripService.get_driver_trips(str(user.id), upcoming_only=True)
+    
     return templates.TemplateResponse(
         "driver/schedule.html",
         {
             "request": request,
             "user": user,
+            "trips": trips,
+            "active_tab": "schedule",
         },
     )
 
@@ -367,6 +400,7 @@ async def driver_vehicles_page(
             "request": request,
             "user": user,
             "vehicles": vehicles,
+            "active_tab": "vehicles",
         },
     )
 

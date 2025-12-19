@@ -35,7 +35,7 @@ async def customer_dashboard(
             "request": request,
             "user": user,
             "bookings": bookings,
-            "active_tab": "bookings",
+            "active_tab": "dashboard",
         },
     )
 
@@ -87,6 +87,7 @@ async def search_trips_page(
                 "date": date or "",
                 "seats": seats,
             },
+            "active_tab": "search",
         },
     )
 
@@ -293,6 +294,7 @@ async def customer_history_page(
             "user": user,
             "bookings": bookings,
             "status_filter": status,
+            "active_tab": "history",
         },
     )
 
@@ -311,6 +313,7 @@ async def customer_favorites_page(
             "request": request,
             "user": user,
             "locations": LOCATIONS,
+            "active_tab": "favorites",
         },
     )
 

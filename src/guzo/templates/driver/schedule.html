@@ -22,11 +22,12 @@
                 class="sr-only peer" 
                 {% if user.is_online %}checked{% endif %}
                 hx-post="/driver/toggle-status"
-                hx-swap="none"
+                hx-swap="outerHTML"
+                hx-target="closest label"
                 hx-trigger="change"
             >
             <div class="w-14 h-7 bg-apple-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-apple-green"></div>
-            <span class="ml-3 text-sm font-medium text-apple-gray-600" id="status-text">
+            <span class="ml-3 text-sm font-medium text-apple-gray-600">
                 {% if user.is_online %}Online{% else %}Offline{% endif %}
             </span>
         </label>

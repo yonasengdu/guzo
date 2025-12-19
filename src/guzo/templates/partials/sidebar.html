@@ -36,18 +36,6 @@
                 Favorites
             </a>
             
-            <div class="pt-4 mt-4 border-t border-apple-gray-200">
-                <p class="px-4 text-xs font-medium text-apple-gray-400 uppercase tracking-wider mb-2">Account</p>
-                <a href="/customer/profile" 
-                   class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
-                          {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'profile' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                    Profile
-                </a>
-            </div>
-            
         {% elif user.role.value == 'driver' %}
             <!-- Driver Sidebar -->
             <a href="/driver" 
@@ -85,7 +73,7 @@
             
             <div class="pt-4 mt-4 border-t border-apple-gray-200">
                 <p class="px-4 text-xs font-medium text-apple-gray-400 uppercase tracking-wider mb-2">Account</p>
-                <a href="/driver/verification" 
+                <a href="/verification/form" 
                    class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
                           {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'verification' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,14 +85,6 @@
                     {% else %}
                     <span class="ml-auto badge-apple badge-success text-xs">Verified</span>
                     {% endif %}
-                </a>
-                <a href="/driver/profile" 
-                   class="flex items-center gap-3 px-4 py-3 rounded-apple text-sm font-medium transition-all
-                          {{ 'bg-apple-blue/10 text-apple-blue' if active_tab == 'profile' else 'text-apple-gray-500 hover:bg-apple-gray-100 hover:text-apple-gray-600' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                    Profile
                 </a>
             </div>
             
