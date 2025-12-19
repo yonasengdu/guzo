@@ -89,4 +89,20 @@ class AuthService:
     async def get_user_by_email(email: str) -> Optional[User]:
         """Get a user by email."""
         return await user_repository.get_by_email(email)
+    
+    @staticmethod
+    async def toggle_online_status(user: User) -> User:
+        """Toggle driver online/offline status."""
+        user.is_online = not user.is_online
+        user.updated_at = datetime.utcnow()
+        await user.save()
+        return user
+    
+    @staticmethod
+    async def update_schedule(user: User, schedule: dict) -> User:
+        """Update driver schedule."""
+        user.schedule = schedule
+        user.updated_at = datetime.utcnow()
+        await user.save()
+        return user
 

@@ -192,15 +192,12 @@ async def get_verification_detail(
     user: User = Depends(get_current_admin),
 ):
     """Get verification detail (admin)."""
-    from beanie import PydanticObjectId
-    from src.guzo.verification.repository import VerificationRepository
+    result = await VerificationService.get_verification_detail(verification_id)
     
-    verification = await VerificationRepository.get_by_id(verification_id)
-    
-    if not verification:
+    if not result:
         raise HTTPException(status_code=404, detail="Verification not found")
     
-    driver = await User.get(PydanticObjectId(verification.driver_id))
+    verification, driver = result
     
     return templates.TemplateResponse(
         "partials/verification_detail.html",

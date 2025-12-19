@@ -11,6 +11,7 @@ from src.guzo.bookings.service import BookingService
 from src.guzo.trips.core import TripUpdate
 from src.guzo.trips.service import TripService
 from src.guzo.middleware import get_current_admin
+from src.guzo.admin.service import AdminService
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="src/guzo/templates")
@@ -22,29 +23,22 @@ async def admin_dashboard(
     user: User = Depends(get_current_admin),
 ):
     """Admin dashboard page."""
-    # Get all users
-    users = await User.find_all().to_list()
-    trips = await TripService.get_upcoming_trips(limit=50)
-    bookings = await BookingService.get_all_bookings(limit=50)
-    
-    # Calculate stats
-    total_revenue = sum(b.price or 0 for b in bookings if b.status.value == 'completed')
-    stats = {
-        "total_users": len(users),
-        "total_trips": len(trips),
-        "total_bookings": len(bookings),
-        "total_revenue": total_revenue,
-    }
+    stats = await AdminService.get_dashboard_stats()
     
     return templates.TemplateResponse(
         "admin/dashboard.html",
         {
             "request": request,
             "user": user,
-            "users": users,
-            "trips": trips,
-            "bookings": bookings,
-            "stats": stats,
+            "users": stats.users,
+            "trips": stats.trips,
+            "bookings": stats.bookings,
+            "stats": {
+                "total_users": stats.total_users,
+                "total_trips": stats.total_trips,
+                "total_bookings": stats.total_bookings,
+                "total_revenue": stats.total_revenue,
+            },
             "active_tab": "dashboard",
         },
     )
@@ -57,15 +51,8 @@ async def admin_users_page(
     role: Optional[str] = None,
 ):
     """Admin users management page."""
-    if role:
-        users = await User.find(User.role == UserRole(role)).to_list()
-    else:
-        users = await User.find_all().to_list()
-    
-    # Get counts for tabs
-    all_count = await User.count()
-    driver_count = await User.find(User.role == UserRole.DRIVER).count()
-    rider_count = await User.find(User.role == UserRole.RIDER).count()
+    role_enum = UserRole(role) if role else None
+    users, counts = await AdminService.get_users(role=role_enum)
     
     return templates.TemplateResponse(
         "admin/users.html",
@@ -74,11 +61,7 @@ async def admin_users_page(
             "user": user,
             "users": users,
             "role_filter": role,
-            "counts": {
-                "all": all_count,
-                "drivers": driver_count,
-                "riders": rider_count,
-            },
+            "counts": counts,
             "active_tab": "users",
         },
     )
@@ -90,7 +73,7 @@ async def get_drivers(
     user: User = Depends(get_current_admin),
 ):
     """Get all drivers (HTMX partial)."""
-    drivers = await User.find(User.role == UserRole.DRIVER).to_list()
+    drivers = await AdminService.get_drivers()
     
     return templates.TemplateResponse(
         "partials/admin_drivers.html",
@@ -155,15 +138,15 @@ async def get_pending_requests(
     user: User = Depends(get_current_admin),
 ):
     """Get pending charter requests (HTMX partial)."""
-    requests = await BookingService.get_pending_requests()
+    pending_requests = await BookingService.get_pending_requests()
     trips = await TripService.get_upcoming_trips(limit=50)
-    drivers = await User.find(User.role == UserRole.DRIVER).to_list()
+    drivers = await AdminService.get_drivers()
     
     return templates.TemplateResponse(
         "partials/admin_requests.html",
         {
             "request": request,
-            "pending_requests": requests,
+            "pending_requests": pending_requests,
             "trips": trips,
             "drivers": drivers,
         },
@@ -310,13 +293,10 @@ async def activate_user(
     user: User = Depends(get_current_admin),
 ):
     """Activate a user account."""
-    from beanie import PydanticObjectId
-    target_user = await User.get(PydanticObjectId(user_id))
-    if not target_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    target_user.is_active = True
-    await target_user.save()
+    try:
+        await AdminService.activate_user(user_id, user)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     
     if request.headers.get("HX-Request"):
         return HTMLResponse('<span class="badge-apple badge-success">Active</span>')
@@ -331,17 +311,12 @@ async def deactivate_user(
     user: User = Depends(get_current_admin),
 ):
     """Deactivate a user account."""
-    from beanie import PydanticObjectId
-    target_user = await User.get(PydanticObjectId(user_id))
-    if not target_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Prevent deactivating yourself
-    if str(target_user.id) == str(user.id):
-        raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
-    
-    target_user.is_active = False
-    await target_user.save()
+    try:
+        await AdminService.deactivate_user(user_id, user)
+    except ValueError as e:
+        if "your own account" in str(e):
+            raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e))
     
     if request.headers.get("HX-Request"):
         return HTMLResponse('<span class="badge-apple badge-error">Inactive</span>')
@@ -489,4 +464,3 @@ async def admin_pricing_page(
             "active_tab": "pricing",
         },
     )
-

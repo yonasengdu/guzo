@@ -233,4 +233,16 @@ class VerificationService:
         """Check if a driver is verified."""
         verification = await VerificationRepository.get_by_driver(driver_id)
         return verification is not None and verification.status == VerificationStatus.APPROVED
+    
+    @staticmethod
+    async def get_verification_detail(verification_id: str) -> Optional[tuple[DriverVerification, Optional[User]]]:
+        """Get verification with driver info for admin detail view."""
+        from beanie import PydanticObjectId
+        
+        verification = await VerificationRepository.get_by_id(verification_id)
+        if not verification:
+            return None
+        
+        driver = await User.get(PydanticObjectId(verification.driver_id))
+        return verification, driver
 

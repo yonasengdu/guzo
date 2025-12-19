@@ -6,6 +6,7 @@ from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from src.guzo.auth.core import User, UserRole
+from src.guzo.auth.service import AuthService
 from src.guzo.trips.core import TripStatus, TripCreate, TripUpdate
 from src.guzo.trips.service import TripService
 from src.guzo.middleware import get_current_driver
@@ -45,42 +46,16 @@ async def toggle_online_status(
     user: User = Depends(get_current_driver),
 ):
     """Toggle driver online/offline status."""
-    user.is_online = not user.is_online
-    user.updated_at = datetime.utcnow()
-    await user.save()
+    updated_user = await AuthService.toggle_online_status(user)
     
     if request.headers.get("HX-Request"):
-        if user.is_online:
-            return HTMLResponse('''
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        class="sr-only peer" 
-                        checked
-                        hx-post="/driver/toggle-status"
-                        hx-swap="outerHTML"
-                        hx-target="closest label"
-                        hx-trigger="change"
-                    >
-                    <div class="w-14 h-7 bg-apple-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-apple-green"></div>
-                    <span class="ml-3 text-sm font-medium text-apple-gray-600">Online</span>
-                </label>
-            ''')
-        else:
-            return HTMLResponse('''
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input 
-                        type="checkbox" 
-                        class="sr-only peer"
-                        hx-post="/driver/toggle-status"
-                        hx-swap="outerHTML"
-                        hx-target="closest label"
-                        hx-trigger="change"
-                    >
-                    <div class="w-14 h-7 bg-apple-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-apple-green"></div>
-                    <span class="ml-3 text-sm font-medium text-apple-gray-600">Offline</span>
-                </label>
-            ''')
+        return templates.TemplateResponse(
+            "partials/online_toggle.html",
+            {
+                "request": request,
+                "is_online": updated_user.is_online,
+            },
+        )
     
     return RedirectResponse(url="/driver", status_code=303)
 
@@ -354,9 +329,7 @@ async def update_schedule(
             "end": end,
         }
     
-    user.schedule = schedule
-    user.updated_at = datetime.utcnow()
-    await user.save()
+    await AuthService.update_schedule(user, schedule)
     
     if request.headers.get("HX-Request"):
         return HTMLResponse('<div class="p-4 bg-green-100 text-green-700 rounded-xl">Schedule saved!</div>')
@@ -432,4 +405,3 @@ async def get_pricing_suggestion(
             {"<p class='text-xs text-orange-500 mt-2'>⚡ Surge pricing active: " + suggestion["surge_info"] + "</p>" if suggestion["is_surge"] else ""}
         </div>
     ''')
-
