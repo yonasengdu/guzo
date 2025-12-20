@@ -3,12 +3,14 @@
 from typing import Optional
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from src.guzo.auth.core import User, UserRole
 from src.guzo.payments.core import PaymentMethod, PaymentCreate, PaymentUpdate, PaymentResponse
 from src.guzo.payments.service import PaymentService
 from src.guzo.middleware import get_current_user_required, get_current_admin
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
+templates = Jinja2Templates(directory="src/guzo/templates")
 
 
 @router.get("", response_model=list[PaymentResponse])
@@ -58,8 +60,13 @@ async def create_payment(
         )
         
         if request.headers.get("HX-Request"):
-            return HTMLResponse(
-                f'<div class="alert alert-success">Payment of ETB {amount} initiated</div>'
+            return templates.TemplateResponse(
+                "partials/payment_success.html",
+                {
+                    "request": request,
+                    "amount": amount,
+                    "method": payment_method,
+                },
             )
         
         return PaymentResponse(

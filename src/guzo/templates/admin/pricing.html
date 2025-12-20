@@ -40,30 +40,17 @@
             </button>
         </div>
         
-        {% if pricing_rules %}
-        <div class="space-y-3">
-            {% for rule in pricing_rules %}
-            <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
-                <div>
-                    <p class="font-medium text-apple-gray-600">{{ rule.origin }} → {{ rule.destination }}</p>
-                    <p class="text-sm text-apple-gray-400">Base: {{ rule.base_price_per_seat }} ETB/seat | {{ rule.base_whole_car_price }} ETB/car</p>
-                </div>
-                <button 
-                    class="text-apple-red text-sm hover:underline"
-                    hx-delete="/admin/pricing/rule/{{ rule.id }}"
-                    hx-confirm="Delete this pricing rule?"
-                    hx-swap="none"
-                    hx-on::after-request="location.reload()"
-                >Delete</button>
+        <!-- Rules Table -->
+        <div 
+            hx-get="/pricing/rules" 
+            hx-trigger="load"
+            hx-swap="innerHTML"
+        >
+            <div class="text-center py-8">
+                <div class="animate-spin w-8 h-8 border-4 border-apple-blue border-t-transparent rounded-full mx-auto"></div>
+                <p class="text-apple-gray-400 mt-2">Loading pricing rules...</p>
             </div>
-            {% endfor %}
         </div>
-        {% else %}
-        <div class="text-center py-8">
-            <p class="text-apple-gray-400">No pricing rules configured</p>
-            <p class="text-sm text-apple-gray-400 mt-1">Add rules to set base prices for routes</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 
@@ -85,29 +72,17 @@
             <p class="text-sm text-apple-gray-400">Peak hours (7-9am and 5-7pm) automatically apply a 1.2x multiplier.</p>
         </div>
         
-        {% if surge_rules %}
-        <div class="space-y-3">
-            {% for surge in surge_rules %}
-            <div class="flex items-center justify-between p-4 bg-apple-gray-50 rounded-xl">
-                <div>
-                    <p class="font-medium text-apple-gray-600">{{ surge.location }}</p>
-                    <p class="text-sm text-apple-gray-400">{{ surge.multiplier }}x multiplier | Until {{ surge.end_time.strftime('%b %d, %H:%M') }}</p>
-                </div>
-                <button 
-                    class="text-apple-red text-sm hover:underline"
-                    hx-delete="/admin/pricing/surge/{{ surge.id }}"
-                    hx-confirm="Delete this surge rule?"
-                    hx-swap="none"
-                    hx-on::after-request="location.reload()"
-                >Delete</button>
+        <!-- Surges List -->
+        <div 
+            hx-get="/pricing/surges" 
+            hx-trigger="load"
+            hx-swap="innerHTML"
+        >
+            <div class="text-center py-8">
+                <div class="animate-spin w-8 h-8 border-4 border-apple-blue border-t-transparent rounded-full mx-auto"></div>
+                <p class="text-apple-gray-400 mt-2">Loading surge rules...</p>
             </div>
-            {% endfor %}
         </div>
-        {% else %}
-        <div class="text-center py-8">
-            <p class="text-apple-gray-400">No active surge pricing</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 
@@ -125,46 +100,44 @@
             </div>
         </div>
         
-        <form hx-post="/admin/pricing/rule/create" hx-swap="none" hx-on::after-request="location.reload()" class="p-6 space-y-4">
+        <form hx-post="/pricing/rules" hx-swap="none" hx-on::after-request="location.reload()" class="p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-apple-gray-500 mb-2">Origin</label>
                     <select name="origin" class="select-apple" required>
                         <option value="">Select</option>
-                        <option value="Addis Ababa">Addis Ababa</option>
-                        <option value="Adama">Adama</option>
-                        <option value="Bahir Dar">Bahir Dar</option>
-                        <option value="Dire Dawa">Dire Dawa</option>
-                        <option value="Gondar">Gondar</option>
-                        <option value="Hawassa">Hawassa</option>
-                        <option value="Mekelle">Mekelle</option>
-                        <option value="Jimma">Jimma</option>
+                        {% for loc in locations %}
+                        <option value="{{ loc }}">{{ loc }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-apple-gray-500 mb-2">Destination</label>
                     <select name="destination" class="select-apple" required>
                         <option value="">Select</option>
-                        <option value="Addis Ababa">Addis Ababa</option>
-                        <option value="Adama">Adama</option>
-                        <option value="Bahir Dar">Bahir Dar</option>
-                        <option value="Dire Dawa">Dire Dawa</option>
-                        <option value="Gondar">Gondar</option>
-                        <option value="Hawassa">Hawassa</option>
-                        <option value="Mekelle">Mekelle</option>
-                        <option value="Jimma">Jimma</option>
+                        {% for loc in locations %}
+                        <option value="{{ loc }}">{{ loc }}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Base Price per Seat (ETB)</label>
-                <input type="number" name="base_price_per_seat" step="1" min="0" required class="input-apple" placeholder="500">
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Base Fare (ETB)</label>
+                <input type="number" name="base_fare" step="1" min="0" required class="input-apple" placeholder="100">
+                <p class="text-xs text-apple-gray-400 mt-1">Fixed starting fare for the route</p>
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Base Whole Car Price (ETB)</label>
-                <input type="number" name="base_whole_car_price" step="1" min="0" required class="input-apple" placeholder="2000">
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Rate per Kilometer (ETB)</label>
+                <input type="number" name="per_km_rate" step="0.5" min="0" required class="input-apple" placeholder="5">
+                <p class="text-xs text-apple-gray-400 mt-1">Price added per kilometer traveled</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Estimated Distance (km)</label>
+                <input type="number" name="estimated_distance_km" step="1" min="1" required class="input-apple" placeholder="500">
+                <p class="text-xs text-apple-gray-400 mt-1">Approximate distance between locations</p>
             </div>
             
             <div class="pt-4 flex gap-3">
@@ -193,16 +166,18 @@
             </div>
         </div>
         
-        <form hx-post="/admin/pricing/surge/create" hx-swap="none" hx-on::after-request="location.reload()" class="p-6 space-y-4">
+        <form hx-post="/pricing/surges" hx-swap="none" hx-on::after-request="location.reload()" class="p-6 space-y-4">
             <div>
-                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Location</label>
-                <select name="location" class="select-apple" required>
-                    <option value="">Select</option>
-                    <option value="Addis Ababa">Addis Ababa</option>
-                    <option value="Adama">Adama</option>
-                    <option value="Bahir Dar">Bahir Dar</option>
-                    <option value="Dire Dawa">Dire Dawa</option>
-                    <option value="*">All Locations</option>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Route</label>
+                <select name="route_key" class="select-apple" required>
+                    <option value="*">All Routes</option>
+                    {% for origin in locations %}
+                    {% for dest in locations %}
+                    {% if origin != dest %}
+                    <option value="{{ origin }}-{{ dest }}">{{ origin }} → {{ dest }}</option>
+                    {% endif %}
+                    {% endfor %}
+                    {% endfor %}
                 </select>
             </div>
             
@@ -210,6 +185,23 @@
                 <label class="block text-sm font-medium text-apple-gray-500 mb-2">Multiplier</label>
                 <input type="number" name="multiplier" step="0.1" min="1" max="5" required class="input-apple" placeholder="1.5">
                 <p class="text-xs text-apple-gray-400 mt-1">1.5 = 50% increase, 2.0 = 100% increase</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Reason</label>
+                <select name="reason" class="select-apple" required>
+                    <option value="manual">Manual</option>
+                    <option value="peak_hours">Peak Hours</option>
+                    <option value="high_demand">High Demand</option>
+                    <option value="holiday">Holiday</option>
+                    <option value="weather">Weather</option>
+                    <option value="special_event">Special Event</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-apple-gray-500 mb-2">Description (optional)</label>
+                <input type="text" name="description" class="input-apple" placeholder="e.g., Christmas holiday surge">
             </div>
             
             <div class="grid grid-cols-2 gap-4">

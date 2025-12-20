@@ -54,6 +54,18 @@ async def admin_users_page(
     role_enum = UserRole(role) if role else None
     users, counts = await AdminService.get_users(role=role_enum)
     
+    # Return partial for HTMX requests (tab switching)
+    if request.headers.get("HX-Request"):
+        return templates.TemplateResponse(
+            "partials/admin_users_list.html",
+            {
+                "request": request,
+                "users": users,
+                "role_filter": role,
+                "counts": counts,
+            },
+        )
+    
     return templates.TemplateResponse(
         "admin/users.html",
         {

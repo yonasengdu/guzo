@@ -1,0 +1,63 @@
+<div class="card-apple p-6 space-y-4">
+    <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-apple-gray-600">
+            Demand Analysis: {{ origin }} → {{ destination }}
+        </h3>
+        <span class="text-sm text-apple-gray-400">Last {{ days }} days</span>
+    </div>
+    
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-3 gap-4">
+        <div class="bg-apple-gray-50 rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-apple-gray-600">{{ stats.total_bookings }}</p>
+            <p class="text-sm text-apple-gray-400">Total Bookings</p>
+        </div>
+        <div class="bg-apple-gray-50 rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-apple-gray-600">{{ stats.avg_daily_bookings }}</p>
+            <p class="text-sm text-apple-gray-400">Avg. Daily</p>
+        </div>
+        <div class="bg-apple-gray-50 rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold {% if stats.suggested_surge > 1.0 %}text-orange-500{% else %}text-apple-green{% endif %}">
+                {{ stats.suggested_surge }}x
+            </p>
+            <p class="text-sm text-apple-gray-400">Suggested Surge</p>
+        </div>
+    </div>
+    
+    <!-- Daily Breakdown -->
+    {% if stats.bookings_by_day %}
+    <div>
+        <h4 class="text-sm font-medium text-apple-gray-500 mb-3">Daily Breakdown</h4>
+        <div class="space-y-2">
+            {% for day, count in stats.bookings_by_day.items() %}
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-apple-gray-600">{{ day }}</span>
+                <div class="flex items-center gap-2">
+                    <div class="h-2 bg-apple-blue rounded" style="width: {{ (count / stats.total_bookings * 100) | int }}px;"></div>
+                    <span class="text-sm font-medium text-apple-gray-600">{{ count }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-4">
+        <p class="text-apple-gray-400">No bookings found for this route</p>
+    </div>
+    {% endif %}
+    
+    <!-- Recommendation -->
+    {% if stats.suggested_surge > 1.0 %}
+    <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+        <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <p class="text-sm text-orange-700">
+                High demand detected! Consider applying a <strong>{{ stats.suggested_surge }}x</strong> surge.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+

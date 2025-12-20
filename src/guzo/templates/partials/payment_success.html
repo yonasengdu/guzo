@@ -1,0 +1,88 @@
+<div class="space-y-6">
+    <!-- Success Icon -->
+    <div class="text-center">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-apple-gray-600 mt-4">Payment Initiated!</h3>
+        <p class="text-apple-gray-400 mt-1">{{ amount }} ETB via {{ method|replace('_', ' ')|title }}</p>
+    </div>
+    
+    <!-- Payment Instructions -->
+    <div class="bg-apple-gray-50 rounded-xl p-5">
+        {% if method == 'cash' %}
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-medium text-apple-gray-600">Pay cash to driver</p>
+                <p class="text-sm text-apple-gray-400 mt-1">Please have the exact amount ready when the driver picks you up.</p>
+            </div>
+        </div>
+        
+        {% elif method == 'telebirr' %}
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span class="text-lg font-bold text-yellow-600">T</span>
+            </div>
+            <div>
+                <p class="font-medium text-apple-gray-600">Complete in Telebirr app</p>
+                <p class="text-sm text-apple-gray-400 mt-1">Open your Telebirr app to approve the payment request.</p>
+            </div>
+        </div>
+        
+        {% elif method == 'ebirr' %}
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span class="text-lg font-bold text-blue-600">e</span>
+            </div>
+            <div>
+                <p class="font-medium text-apple-gray-600">Complete in CBE Birr app</p>
+                <p class="text-sm text-apple-gray-400 mt-1">Open your CBE Birr app to approve the payment request.</p>
+            </div>
+        </div>
+        
+        {% elif method == 'bank_transfer' %}
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-medium text-apple-gray-600">Bank Transfer</p>
+                <p class="text-sm text-apple-gray-400 mt-1">Transfer to our account. Payment will be confirmed once received.</p>
+                <div class="mt-3 p-3 bg-white rounded-lg text-sm">
+                    <p class="text-apple-gray-500">Bank: Commercial Bank of Ethiopia</p>
+                    <p class="text-apple-gray-500">Account: 1000XXXXXXXXX</p>
+                    <p class="text-apple-gray-500">Name: Guzo Rideshare PLC</p>
+                </div>
+            </div>
+        </div>
+        
+        {% elif method == 'card' %}
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-medium text-apple-gray-600">Card Payment</p>
+                <p class="text-sm text-apple-gray-400 mt-1">Your card will be charged automatically.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Action Button -->
+    <a href="/customer" class="btn-apple btn-apple-primary w-full text-center block">
+        View My Bookings
+    </a>
+</div>
+

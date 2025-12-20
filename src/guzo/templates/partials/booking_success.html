@@ -1,16 +1,133 @@
-<div class="alert-success alert-apple">
-    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    <div>
-        <p class="font-medium">Booking confirmed!</p>
-        <p class="text-sm opacity-75">Your ride has been booked successfully. Check your dashboard for details.</p>
+<div class="card-apple p-6 space-y-6">
+    <!-- Success Header -->
+    <div class="flex items-start gap-4">
+        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <h3 class="text-lg font-semibold text-apple-gray-600">Booking Confirmed!</h3>
+            <p class="text-sm text-apple-gray-400">
+                {% if message %}
+                {{ message }}
+                {% else %}
+                Your ride has been booked successfully.
+                {% endif %}
+            </p>
+        </div>
     </div>
+    
+    <!-- Booking Details -->
+    <div class="bg-apple-gray-50 rounded-xl p-4 space-y-3">
+        <div class="flex justify-between">
+            <span class="text-apple-gray-500">Route</span>
+            <span class="font-medium text-apple-gray-600">{{ booking.pickup_location }} → {{ booking.dropoff_location }}</span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-apple-gray-500">Date & Time</span>
+            <span class="font-medium text-apple-gray-600">{{ booking.scheduled_time.strftime('%b %d, %Y at %H:%M') }}</span>
+        </div>
+        {% if booking.seats_booked > 1 %}
+        <div class="flex justify-between">
+            <span class="text-apple-gray-500">Seats</span>
+            <span class="font-medium text-apple-gray-600">{{ booking.seats_booked }}</span>
+        </div>
+        {% endif %}
+        {% if booking.price %}
+        <div class="flex justify-between border-t border-apple-gray-200 pt-3">
+            <span class="text-apple-gray-600 font-medium">Total Price</span>
+            <span class="text-xl font-bold text-apple-gray-600">{{ "%.0f"|format(booking.price) }} ETB</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Payment Selection -->
+    {% if booking.price %}
+    <div>
+        <h4 class="text-sm font-medium text-apple-gray-600 mb-3">Select Payment Method</h4>
+        <form 
+            hx-post="/payments" 
+            hx-target="closest .card-apple"
+            hx-swap="innerHTML"
+            class="space-y-4"
+        >
+            <input type="hidden" name="booking_id" value="{{ booking.id }}">
+            <input type="hidden" name="amount" value="{{ booking.price }}">
+            
+            <div class="grid grid-cols-2 gap-3">
+                <!-- Cash -->
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="payment_method" value="cash" checked class="peer sr-only">
+                    <div class="flex items-center gap-3 p-4 rounded-xl border-2 border-apple-gray-200 peer-checked:border-apple-green peer-checked:bg-green-50 transition-all">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-apple-gray-600">Cash</p>
+                            <p class="text-xs text-apple-gray-400">Pay at pickup</p>
+                        </div>
+                    </div>
+                </label>
+                
+                <!-- Telebirr -->
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="payment_method" value="telebirr" class="peer sr-only">
+                    <div class="flex items-center gap-3 p-4 rounded-xl border-2 border-apple-gray-200 peer-checked:border-apple-green peer-checked:bg-green-50 transition-all">
+                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <span class="text-lg font-bold text-yellow-600">T</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-apple-gray-600">Telebirr</p>
+                            <p class="text-xs text-apple-gray-400">Mobile money</p>
+                        </div>
+                    </div>
+                </label>
+                
+                <!-- eBirr -->
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="payment_method" value="ebirr" class="peer sr-only">
+                    <div class="flex items-center gap-3 p-4 rounded-xl border-2 border-apple-gray-200 peer-checked:border-apple-green peer-checked:bg-green-50 transition-all">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span class="text-lg font-bold text-blue-600">e</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-apple-gray-600">CBE Birr</p>
+                            <p class="text-xs text-apple-gray-400">Mobile banking</p>
+                        </div>
+                    </div>
+                </label>
+                
+                <!-- Bank Transfer -->
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="payment_method" value="bank_transfer" class="peer sr-only">
+                    <div class="flex items-center gap-3 p-4 rounded-xl border-2 border-apple-gray-200 peer-checked:border-apple-green peer-checked:bg-green-50 transition-all">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-apple-gray-600">Bank</p>
+                            <p class="text-xs text-apple-gray-400">Transfer</p>
+                        </div>
+                    </div>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn-apple btn-apple-primary w-full">
+                Confirm Payment
+            </button>
+        </form>
+    </div>
+    {% else %}
+    <!-- No price yet (charter request) -->
+    <div class="flex gap-3">
+        <a href="/customer" class="btn-apple btn-apple-primary flex-1 text-center">
+            View My Bookings
+        </a>
+    </div>
+    {% endif %}
 </div>
-
-<script>
-    // Redirect to dashboard after 2 seconds
-    setTimeout(() => {
-        window.location.href = '/customer';
-    }, 2000);
-</script>
