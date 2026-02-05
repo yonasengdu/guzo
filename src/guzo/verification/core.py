@@ -42,20 +42,24 @@ class DriverVerification(Document):
     vehicle_registration: Optional[str] = None
     
     # Status
-    status: VerificationStatus = VerificationStatus.PENDING
+    status: Indexed(VerificationStatus) = VerificationStatus.PENDING
     
     # Admin review
     admin_notes: Optional[str] = None
     rejection_reason: Optional[str] = None
     
     # Timestamps
-    submitted_at: datetime = Field(default_factory=datetime.utcnow)
+    submitted_at: Indexed(datetime) = Field(default_factory=datetime.utcnow)
     reviewed_at: Optional[datetime] = None
     reviewed_by: Optional[str] = None  # Admin user ID
     expires_at: Optional[datetime] = None
     
     class Settings:
         name = "driver_verifications"
+        indexes = [
+            # Compound index for pending verifications sorted by submission date
+            [("status", 1), ("submitted_at", 1)],
+        ]
         
     class Config:
         json_schema_extra = {

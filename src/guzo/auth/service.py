@@ -76,6 +76,10 @@ class AuthService:
         if not cls.verify_password(password, user.password_hash):
             return None
         
+        # Check if user is active (security fix)
+        if not user.is_active:
+            return None
+        
         # Update last login
         await user_repository.update_last_login(str(user.id))
         return user
@@ -93,6 +97,10 @@ class AuthService:
     @staticmethod
     async def toggle_online_status(user: User) -> User:
         """Toggle driver online/offline status."""
+        # Only drivers can toggle online status
+        if user.role != UserRole.DRIVER:
+            raise ValueError("Only drivers can toggle online status")
+        
         user.is_online = not user.is_online
         user.updated_at = datetime.utcnow()
         await user.save()
@@ -101,6 +109,20 @@ class AuthService:
     @staticmethod
     async def update_schedule(user: User, schedule: dict) -> User:
         """Update driver schedule."""
+        # Only drivers can update schedule
+        if user.role != UserRole.DRIVER:
+            raise ValueError("Only drivers can update schedule")
+        
+        # Validate schedule structure
+        valid_days = {'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'}
+        for day, times in schedule.items():
+            if day not in valid_days:
+                raise ValueError(f"Invalid day: {day}")
+            if not isinstance(times, dict):
+                raise ValueError(f"Invalid schedule format for {day}")
+            if 'enabled' not in times:
+                raise ValueError(f"Missing 'enabled' field for {day}")
+        
         user.schedule = schedule
         user.updated_at = datetime.utcnow()
         await user.save()

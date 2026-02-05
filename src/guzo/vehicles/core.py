@@ -37,8 +37,8 @@ class Vehicle(Document):
     capacity: int = Field(ge=1, le=50)  # Number of passengers
     
     # Status
-    is_active: bool = True
-    is_verified: bool = False
+    is_active: Indexed(bool) = True
+    is_verified: Indexed(bool) = False
     
     # Images
     images: list[str] = Field(default_factory=list)
@@ -55,6 +55,10 @@ class Vehicle(Document):
     
     class Settings:
         name = "vehicles"
+        indexes = [
+            # Compound index for finding active vehicles by driver
+            [("driver_id", 1), ("is_active", 1)],
+        ]
         
     class Config:
         json_schema_extra = {
@@ -110,7 +114,10 @@ class VehicleResponse(BaseModel):
     images: list[str] = []
     registration_document: Optional[str] = None
     registration_expiry: Optional[datetime] = None
+    insurance_document: Optional[str] = None
+    insurance_expiry: Optional[datetime] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

@@ -1,5 +1,24 @@
 """Shared utilities and constants for Guzo."""
 
+from pydantic import BaseModel
+
+
+# ============== Common Response Models ==============
+
+class DeleteResponse(BaseModel):
+    """Response for successful delete operations."""
+    status: str = "deleted"
+    message: str = "Resource deleted successfully"
+
+
+class StatusResponse(BaseModel):
+    """Generic status response."""
+    status: str
+    message: str = ""
+
+
+# ============== Ethiopian Locations ==============
+
 # Ethiopian cities for trip origin/destination selection
 LOCATIONS = [
     'Addis Ababa',

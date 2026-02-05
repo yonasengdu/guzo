@@ -1,137 +1,147 @@
 """Reviews resource - API routes for reviews."""
 
 from typing import Optional
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
-from src.guzo.auth.core import User
+from src.guzo.auth.core import User, UserResponse
 from src.guzo.middleware import get_current_user
-from src.guzo.reviews.core import ReviewCreate
+from src.guzo.reviews.core import ReviewCreate, ReviewResponse
 from src.guzo.reviews.service import ReviewService
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
-templates = Jinja2Templates(directory="src/guzo/templates")
 
 
-@router.get("/pending", response_class=HTMLResponse)
-async def get_pending_reviews(
-    request: Request,
-    user: User = Depends(get_current_user),
-):
+# ============== Request/Response Models ==============
+
+class CanReviewResponse(BaseModel):
+    """Response for can review check."""
+    can_review: bool
+    reviewee_id: Optional[str] = None
+    reviewee_name: Optional[str] = None
+
+
+class PendingReview(BaseModel):
+    """Pending review info."""
+    booking_id: str
+    reviewee_id: str
+    reviewee_name: Optional[str] = None
+    pickup_location: str
+    dropoff_location: str
+
+
+# ============== Endpoints ==============
+
+@router.get("/pending", response_model=list[PendingReview])
+async def get_pending_reviews(user: User = Depends(get_current_user)):
     """Get pending reviews for current user."""
     pending = await ReviewService.get_pending_reviews(user)
-    
-    return templates.TemplateResponse(
-        "partials/pending_reviews.html",
-        {
-            "request": request,
-            "pending_reviews": pending,
-            "user": user,
-        },
-    )
+    return [
+        PendingReview(
+            booking_id=str(p.get('booking_id', '')),
+            reviewee_id=str(p.get('reviewee_id', '')),
+            reviewee_name=p.get('reviewee_name'),
+            pickup_location=p.get('pickup_location', ''),
+            dropoff_location=p.get('dropoff_location', ''),
+        )
+        for p in pending
+    ] if pending else []
 
 
-@router.get("/user/{user_id}", response_class=HTMLResponse)
+@router.get("/user/{user_id}", response_model=list[ReviewResponse])
 async def get_user_reviews(
-    request: Request,
     user_id: str,
     user: User = Depends(get_current_user),
 ):
     """Get reviews for a specific user."""
     reviews = await ReviewService.get_reviews_for_user(user_id)
-    
-    return templates.TemplateResponse(
-        "partials/user_reviews.html",
-        {
-            "request": request,
-            "reviews": reviews,
-            "user": user,
-        },
-    )
+    return [
+        ReviewResponse(
+            id=str(r.id),
+            booking_id=r.booking_id,
+            reviewer_id=r.reviewer_id,
+            reviewee_id=r.reviewee_id,
+            reviewer_role=r.reviewer_role,
+            reviewer_name=getattr(r, 'reviewer_name', None),
+            rating=r.rating,
+            comment=r.comment,
+            created_at=r.created_at,
+        )
+        for r in reviews
+    ]
 
 
-@router.post("", response_class=HTMLResponse)
+@router.post("", response_model=ReviewResponse)
 async def create_review(
-    request: Request,
+    review_data: ReviewCreate,
     user: User = Depends(get_current_user),
-    booking_id: str = Form(...),
-    reviewee_id: str = Form(...),
-    rating: int = Form(...),
-    comment: Optional[str] = Form(None),
 ):
     """Submit a review for a completed booking."""
-    # Validate rating
-    if rating < 1 or rating > 5:
-        return templates.TemplateResponse(
-            "partials/error.html",
-            {
-                "request": request,
-                "message": "Rating must be between 1 and 5",
-            },
-            status_code=400,
-        )
-    
-    review_data = ReviewCreate(
-        booking_id=booking_id,
-        reviewee_id=reviewee_id,
-        rating=rating,
-        comment=comment,
-    )
+    if review_data.rating < 1 or review_data.rating > 5:
+        raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
     
     review = await ReviewService.create_review(review_data, user)
     
     if not review:
-        return templates.TemplateResponse(
-            "partials/error.html",
-            {
-                "request": request,
-                "message": "Unable to create review. You may have already reviewed this booking.",
-            },
+        raise HTTPException(
             status_code=400,
+            detail="Unable to create review. You may have already reviewed this booking.",
         )
     
-    return templates.TemplateResponse(
-        "partials/review_success.html",
-        {
-            "request": request,
-            "review": review,
-        },
+    return ReviewResponse(
+        id=str(review.id),
+        booking_id=review.booking_id,
+        reviewer_id=review.reviewer_id,
+        reviewee_id=review.reviewee_id,
+        reviewer_role=review.reviewer_role,
+        rating=review.rating,
+        comment=review.comment,
+        created_at=review.created_at,
     )
 
 
-@router.get("/form/{booking_id}", response_class=HTMLResponse)
-async def get_review_form(
-    request: Request,
+@router.get("/can-review/{booking_id}", response_model=CanReviewResponse)
+async def check_can_review(
     booking_id: str,
-    reviewee_id: str,
     user: User = Depends(get_current_user),
 ):
-    """Get the review form for a booking."""
+    """Check if user can review a booking."""
     from beanie import PydanticObjectId
-    from src.guzo.auth.core import User as UserModel
+    from src.guzo.bookings.service import BookingService
     
     can_review = await ReviewService.can_review_booking(user, booking_id)
     
     if not can_review:
-        return templates.TemplateResponse(
-            "partials/error.html",
-            {
-                "request": request,
-                "message": "You cannot review this booking.",
-            },
-            status_code=400,
-        )
+        return CanReviewResponse(can_review=False)
     
-    reviewee = await UserModel.get(PydanticObjectId(reviewee_id))
+    # Get booking to find reviewee
+    booking = await BookingService.get_booking(booking_id)
+    if not booking:
+        return CanReviewResponse(can_review=False)
     
-    return templates.TemplateResponse(
-        "partials/review_form.html",
-        {
-            "request": request,
-            "booking_id": booking_id,
-            "reviewee": reviewee,
-            "user": user,
-        },
+    # Determine reviewee based on user role
+    reviewee_id = None
+    reviewee_name = None
+    
+    if str(user.id) == booking.customer_id:
+        # Customer reviewing driver
+        reviewee_id = booking.assigned_driver_id
+        if reviewee_id:
+            from src.guzo.auth.core import User as UserModel
+            driver = await UserModel.get(PydanticObjectId(reviewee_id))
+            if driver:
+                reviewee_name = driver.full_name
+    else:
+        # Driver reviewing customer
+        reviewee_id = booking.customer_id
+        if reviewee_id:
+            from src.guzo.auth.core import User as UserModel
+            customer = await UserModel.get(PydanticObjectId(reviewee_id))
+            if customer:
+                reviewee_name = customer.full_name
+    
+    return CanReviewResponse(
+        can_review=True,
+        reviewee_id=reviewee_id,
+        reviewee_name=reviewee_name,
     )
-

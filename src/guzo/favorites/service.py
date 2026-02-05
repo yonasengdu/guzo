@@ -106,9 +106,17 @@ class FavoriteService:
         
         favorites = await FavoriteDriverRepository.get_user_favorites(user_id)
         
+        if not favorites:
+            return []
+        
+        # Batch fetch all drivers in one query (fix N+1)
+        driver_ids = [PydanticObjectId(fav.driver_id) for fav in favorites]
+        drivers = await User.find({"_id": {"$in": driver_ids}}).to_list()
+        drivers_map = {str(d.id): d for d in drivers}
+        
         responses = []
         for fav in favorites:
-            driver = await User.get(PydanticObjectId(fav.driver_id))
+            driver = drivers_map.get(fav.driver_id)
             
             responses.append(FavoriteDriverResponse(
                 id=str(fav.id),

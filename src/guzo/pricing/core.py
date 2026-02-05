@@ -186,3 +186,17 @@ class PriceCalculation(BaseModel):
     final_price: float
     is_surge_active: bool
 
+
+class DemandStats(BaseModel):
+    """Schema for route demand statistics."""
+    origin: str
+    destination: str
+    days: int
+    total_bookings: int
+    total_trips: int
+    avg_bookings_per_day: float
+    avg_price: float
+    booking_trend: str  # "increasing", "decreasing", "stable"
+    peak_hours: list[int]
+    recommended_surge: Optional[float] = None
+

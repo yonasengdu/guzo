@@ -50,11 +50,15 @@ class ReviewRepository:
         ).sort(-Review.created_at).limit(limit).to_list()
     
     @staticmethod
-    async def get_average_rating(user_id: str) -> tuple[float, int]:
-        """Get average rating and total count for a user."""
+    async def get_average_rating(user_id: str) -> tuple[float | None, int]:
+        """Get average rating and total count for a user.
+        
+        Returns (None, 0) for users with no reviews instead of a default 5.0.
+        This prevents new users from appearing to have perfect ratings.
+        """
         reviews = await Review.find(Review.reviewee_id == user_id).to_list()
         if not reviews:
-            return 5.0, 0
+            return None, 0
         total = sum(r.rating for r in reviews)
         count = len(reviews)
         return round(total / count, 2), count

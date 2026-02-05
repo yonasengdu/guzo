@@ -100,9 +100,17 @@ class VerificationService:
         
         verifications = await VerificationRepository.get_pending()
         
+        if not verifications:
+            return []
+        
+        # Batch fetch all drivers in one query (fix N+1)
+        driver_ids = [PydanticObjectId(v.driver_id) for v in verifications]
+        drivers = await User.find({"_id": {"$in": driver_ids}}).to_list()
+        drivers_map = {str(d.id): d for d in drivers}
+        
         responses = []
         for v in verifications:
-            driver = await User.get(PydanticObjectId(v.driver_id))
+            driver = drivers_map.get(v.driver_id)
             
             responses.append(VerificationResponse(
                 id=str(v.id),
@@ -135,9 +143,17 @@ class VerificationService:
         else:
             verifications = await VerificationRepository.get_all()
         
+        if not verifications:
+            return []
+        
+        # Batch fetch all drivers in one query (fix N+1)
+        driver_ids = [PydanticObjectId(v.driver_id) for v in verifications]
+        drivers = await User.find({"_id": {"$in": driver_ids}}).to_list()
+        drivers_map = {str(d.id): d for d in drivers}
+        
         responses = []
         for v in verifications:
-            driver = await User.get(PydanticObjectId(v.driver_id))
+            driver = drivers_map.get(v.driver_id)
             
             responses.append(VerificationResponse(
                 id=str(v.id),

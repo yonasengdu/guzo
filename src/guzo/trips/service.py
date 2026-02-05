@@ -12,7 +12,45 @@ class TripService:
     
     @staticmethod
     async def create_trip(driver_id: str, trip_data: TripCreate) -> DriverTrip:
-        """Create a new trip."""
+        """Create a new trip with full validation.
+        
+        Validates:
+        - Driver exists and is active
+        - departure_time is in the future
+        - whole_car_price >= price_per_seat * available_seats (business logic consistency)
+        """
+        from beanie import PydanticObjectId
+        from src.guzo.auth.core import UserRole
+        
+        # Validate driver exists and is active
+        try:
+            driver_oid = PydanticObjectId(driver_id)
+        except Exception:
+            raise ValueError("Invalid driver ID format")
+        
+        driver = await User.get(driver_oid)
+        if not driver:
+            raise ValueError("Driver not found")
+        
+        if driver.role != UserRole.DRIVER:
+            raise ValueError("User is not a driver")
+        
+        if not driver.is_active:
+            raise ValueError("Driver account is not active")
+        
+        # Validate departure_time is in the future
+        if trip_data.departure_time <= datetime.utcnow():
+            raise ValueError("Departure time must be in the future")
+        
+        # Validate pricing consistency
+        # whole_car_price should be at least as much as booking all seats individually
+        min_whole_car_price = trip_data.price_per_seat * trip_data.available_seats
+        if trip_data.whole_car_price < min_whole_car_price:
+            raise ValueError(
+                f"Whole car price ({trip_data.whole_car_price}) must be at least "
+                f"price_per_seat * available_seats ({min_whole_car_price})"
+            )
+        
         trip = DriverTrip(
             driver_id=driver_id,
             vehicle_id=trip_data.vehicle_id,

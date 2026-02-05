@@ -10,6 +10,16 @@ from src.guzo.bookings.repository import booking_repository
 from src.guzo.auth.core import User
 
 
+# Valid status transitions for bookings
+VALID_STATUS_TRANSITIONS = {
+    BookingStatus.PENDING: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
+    BookingStatus.CONFIRMED: [BookingStatus.IN_PROGRESS, BookingStatus.CANCELLED],
+    BookingStatus.IN_PROGRESS: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
+    BookingStatus.COMPLETED: [],  # Terminal state
+    BookingStatus.CANCELLED: [],  # Terminal state
+}
+
+
 class BookingService:
     """Service for managing bookings."""
     
@@ -18,27 +28,71 @@ class BookingService:
         booking_data: BookingCreate,
         customer_id: Optional[str] = None
     ) -> Booking:
-        """Create a new booking."""
-        from src.guzo.trips.core import DriverTrip
-        from src.guzo.trips.service import TripService
+        """Create a new booking with full validation.
         
-        # Calculate price if booking a trip
+        Validates:
+        - Trip exists and is SCHEDULED (if trip_id provided)
+        - scheduled_time is in the future
+        - seats_booked doesn't exceed trip capacity
+        - Customer isn't already on this trip
+        """
+        from src.guzo.trips.core import DriverTrip, TripStatus
+        from src.guzo.trips.service import TripService
+        from beanie import PydanticObjectId
+        
+        # Validate scheduled_time is in the future
+        if booking_data.scheduled_time <= datetime.utcnow():
+            raise ValueError("Scheduled time must be in the future")
+        
+        # Calculate price and validate trip if booking a trip
         price = None
         if booking_data.trip_id:
-            trip = await DriverTrip.get(booking_data.trip_id)
-            if trip:
-                if booking_data.booking_type == BookingType.WHOLE_CAR:
-                    price = trip.whole_car_price
-                else:
-                    price = trip.price_per_seat * booking_data.seats_booked
-                
-                # Book the seats
-                success = await TripService.book_seats(
-                    booking_data.trip_id, 
-                    booking_data.seats_booked
+            try:
+                trip_oid = PydanticObjectId(booking_data.trip_id)
+            except Exception:
+                raise ValueError("Invalid trip ID format")
+            
+            trip = await DriverTrip.get(trip_oid)
+            
+            # Validate trip exists
+            if not trip:
+                raise ValueError("Trip not found")
+            
+            # Validate trip status is SCHEDULED
+            if trip.status != TripStatus.SCHEDULED:
+                raise ValueError(f"Trip is not available for booking (status: {trip.status})")
+            
+            # Validate trip departure is in the future
+            if trip.departure_time <= datetime.utcnow():
+                raise ValueError("Trip has already departed")
+            
+            # Validate seats don't exceed capacity
+            if booking_data.seats_booked > trip.available_seats:
+                raise ValueError(f"Requested seats ({booking_data.seats_booked}) exceed trip capacity ({trip.available_seats})")
+            
+            # Check if customer already has a booking on this trip
+            if customer_id:
+                existing_booking = await Booking.find_one(
+                    Booking.trip_id == booking_data.trip_id,
+                    Booking.customer_id == customer_id,
+                    Booking.status.nin_([BookingStatus.CANCELLED])  # Exclude cancelled bookings
                 )
-                if not success:
-                    raise ValueError("Not enough seats available")
+                if existing_booking:
+                    raise ValueError("You already have a booking on this trip")
+            
+            # Calculate price
+            if booking_data.booking_type == BookingType.WHOLE_CAR:
+                price = trip.whole_car_price
+            else:
+                price = trip.price_per_seat * booking_data.seats_booked
+            
+            # Book the seats (atomic operation handles race conditions)
+            success = await TripService.book_seats(
+                booking_data.trip_id, 
+                booking_data.seats_booked
+            )
+            if not success:
+                raise ValueError("Not enough seats available")
         
         booking = Booking(
             customer_id=customer_id,
@@ -67,36 +121,85 @@ class BookingService:
         booking_id: str,
         booking_data: BookingUpdate
     ) -> Optional[Booking]:
-        """Update a booking."""
+        """Update a booking with status transition validation.
+        
+        Valid status transitions:
+        - PENDING -> CONFIRMED, CANCELLED
+        - CONFIRMED -> IN_PROGRESS, CANCELLED  
+        - IN_PROGRESS -> COMPLETED, CANCELLED
+        - COMPLETED -> (terminal state)
+        - CANCELLED -> (terminal state)
+        """
         update_data = booking_data.model_dump(exclude_unset=True)
-        if update_data:
-            update_data["updated_at"] = datetime.utcnow()
+        if not update_data:
+            return await booking_repository.get_by_id(booking_id)
+        
+        # If status is being changed, validate the transition
+        if "status" in update_data:
+            new_status = update_data["status"]
             
-            if "status" in update_data:
-                if update_data["status"] == BookingStatus.CONFIRMED:
-                    update_data["confirmed_at"] = datetime.utcnow()
-                elif update_data["status"] == BookingStatus.COMPLETED:
-                    update_data["completed_at"] = datetime.utcnow()
+            # Get current booking to check current status
+            current_booking = await booking_repository.get_by_id(booking_id)
+            if not current_booking:
+                return None
             
-            return await booking_repository.update(booking_id, update_data)
-        return await booking_repository.get_by_id(booking_id)
+            current_status = current_booking.status
+            
+            # Validate status transition
+            valid_transitions = VALID_STATUS_TRANSITIONS.get(current_status, [])
+            if new_status not in valid_transitions:
+                raise ValueError(
+                    f"Invalid status transition: {current_status} -> {new_status}. "
+                    f"Valid transitions from {current_status}: {valid_transitions}"
+                )
+            
+            # Set timestamps based on new status
+            if new_status == BookingStatus.CONFIRMED:
+                update_data["confirmed_at"] = datetime.utcnow()
+            elif new_status == BookingStatus.COMPLETED:
+                update_data["completed_at"] = datetime.utcnow()
+        
+        update_data["updated_at"] = datetime.utcnow()
+        return await booking_repository.update(booking_id, update_data)
     
     @staticmethod
     async def cancel_booking(booking_id: str) -> bool:
-        """Cancel a booking and release seats."""
+        """
+        Cancel a booking and release seats.
+        Uses atomic update to prevent double-cancellation race condition.
+        """
         from src.guzo.trips.service import TripService
+        from beanie import PydanticObjectId
         
-        booking = await booking_repository.get_by_id(booking_id)
-        if not booking:
+        try:
+            booking_oid = PydanticObjectId(booking_id)
+        except Exception:
             return False
         
-        # Release seats if this was a trip booking
-        if booking.trip_id:
+        # Atomically update status only if not already cancelled/completed
+        # This prevents releasing seats multiple times
+        result = await Booking.find_one(
+            {
+                "_id": booking_oid,
+                "status": {"$nin": [BookingStatus.CANCELLED, BookingStatus.COMPLETED]},
+            }
+        ).update(
+            {
+                "$set": {
+                    "status": BookingStatus.CANCELLED,
+                    "updated_at": datetime.utcnow(),
+                }
+            }
+        )
+        
+        if result is None or result.modified_count == 0:
+            return False
+        
+        # Get the booking to release seats
+        booking = await booking_repository.get_by_id(booking_id)
+        if booking and booking.trip_id:
             await TripService.release_seats(booking.trip_id, booking.seats_booked)
         
-        booking.status = BookingStatus.CANCELLED
-        booking.updated_at = datetime.utcnow()
-        await booking.save()
         return True
     
     @staticmethod
@@ -124,12 +227,35 @@ class BookingService:
         booking_id: str,
         driver_id: str,
         trip_id: Optional[str] = None,
-        price: Optional[float] = None
+        price: Optional[float] = None,
+        auto_confirm: bool = True
     ) -> Optional[Booking]:
-        """Assign a driver to a booking."""
-        return await booking_repository.assign_driver(
+        """
+        Assign a driver to a booking.
+        
+        Args:
+            booking_id: The booking to assign
+            driver_id: The driver to assign
+            trip_id: Optional trip ID to link
+            price: Optional price to set
+            auto_confirm: If True, automatically confirms the booking (default)
+        """
+        # First, assign the driver
+        booking = await booking_repository.assign_driver(
             booking_id, driver_id, trip_id, price
         )
+        
+        if not booking:
+            return None
+        
+        # Then, handle status change (business logic in service layer)
+        if auto_confirm and booking.status == BookingStatus.PENDING:
+            booking.status = BookingStatus.CONFIRMED
+            booking.confirmed_at = datetime.utcnow()
+            booking.updated_at = datetime.utcnow()
+            await booking.save()
+        
+        return booking
     
     @staticmethod
     async def get_booking_with_details(booking_id: str) -> Optional[BookingResponse]:

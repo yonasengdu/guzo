@@ -82,3 +82,11 @@ class DemandHeatmap(BaseModel):
     peak_hours: dict[int, int]  # hour -> booking count
     peak_days: dict[str, int]  # day name -> booking count
 
+
+class SurgeRecommendation(BaseModel):
+    """Surge pricing recommendation."""
+    recommended_multiplier: float
+    reason: str
+    recent_bookings: int
+    current_hour: int
+

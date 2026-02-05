@@ -1,48 +1,64 @@
 """Application factory for Guzo Rideshare Platform."""
 
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import Response
+from fastapi.middleware.cors import CORSMiddleware
 from src.guzo.config import settings
 from src.guzo.infrastructure import init_db, close_db
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG if settings.debug else logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    await init_db()
-    yield
-    await close_db()
+    try:
+        logger.info("Starting application...")
+        await init_db()
+        logger.info("Database initialized successfully")
+        yield
+    except Exception as e:
+        logger.error(f"Failed to initialize application: {e}")
+        raise
+    finally:
+        logger.info("Shutting down application...")
+        await close_db()
+        logger.info("Database connection closed")
 
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-    import os
-    
     app = FastAPI(
         title=settings.app_name,
         description="A ridesharing and charter platform for Ethiopia",
         version="1.0.0",
         lifespan=lifespan,
+        debug=settings.debug,
     )
     
-    # Ensure upload directories exist
-    os.makedirs("static/uploads/photos", exist_ok=True)
-    os.makedirs("static/uploads/licenses", exist_ok=True)
-    os.makedirs("static/uploads/registrations", exist_ok=True)
-    
-    # Mount static files
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+    # CORS middleware configuration
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins_list,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+        expose_headers=["X-Total-Count"],
+    )
     
     # Include routers from domain modules
     from src.guzo.auth import router as auth_router
     from src.guzo.trips import router as trips_router
     from src.guzo.bookings import router as bookings_router
     from src.guzo.vehicles import router as vehicles_router
-    from src.guzo.payments import router as payments_router
+    from src.guzo.wallet import router as wallet_router
     from src.guzo.admin import router as admin_router
-    from src.guzo.pages import router as pages_router
     from src.guzo.reviews.resource import router as reviews_router
     from src.guzo.favorites.resource import router as favorites_router
     from src.guzo.pricing.resource import router as pricing_router
@@ -54,9 +70,8 @@ def create_app() -> FastAPI:
     app.include_router(trips_router)  # /driver routes
     app.include_router(bookings_router)  # /customer routes
     app.include_router(vehicles_router)
-    app.include_router(payments_router)
+    app.include_router(wallet_router)
     app.include_router(admin_router)
-    app.include_router(pages_router)
     # Phase 2 routers
     app.include_router(reviews_router)
     app.include_router(favorites_router)
@@ -64,96 +79,29 @@ def create_app() -> FastAPI:
     app.include_router(verification_router)
     app.include_router(analytics_router)
     
-    # Health check endpoint
+    # Health check endpoint with database connectivity check
     @app.get("/health")
     async def health_check():
-        """Health check endpoint."""
-        return {"status": "healthy", "app": settings.app_name}
-    
-    # PWA manifest route
-    @app.get("/manifest.json")
-    async def get_manifest():
-        """Serve PWA manifest."""
+        """Health check endpoint with database status."""
+        from src.guzo.infrastructure.mongo import get_database
+        
+        db_status = "unknown"
+        try:
+            db = get_database()
+            if db is not None:
+                # Ping the database to check connectivity
+                await db.command("ping")
+                db_status = "connected"
+            else:
+                db_status = "not_initialized"
+        except Exception as e:
+            db_status = f"error: {str(e)}"
+        
         return {
-            "name": "Guzo Rideshare",
-            "short_name": "Guzo",
-            "description": "Book rides across Ethiopia",
-            "start_url": "/",
-            "display": "standalone",
-            "background_color": "#1a1a2e",
-            "theme_color": "#16a34a",
-            "icons": [
-                {
-                    "src": "/static/assets/logo.png",
-                    "sizes": "192x192",
-                    "type": "image/png"
-                },
-                {
-                    "src": "/static/assets/logo.png",
-                    "sizes": "512x512",
-                    "type": "image/png"
-                }
-            ]
+            "status": "healthy" if db_status == "connected" else "degraded",
+            "app": settings.app_name,
+            "database": db_status,
         }
-    
-    # Service worker route
-    @app.get("/sw.js")
-    async def get_service_worker():
-        """Serve service worker."""
-        sw_content = """
-const CACHE_NAME = 'guzo-v1';
-const OFFLINE_URL = '/offline';
-
-const PRECACHE_URLS = [
-    '/',
-    '/offline',
-    '/static/assets/logo.png',
-];
-
-// Install event
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(PRECACHE_URLS);
-        })
-    );
-    self.skipWaiting();
-});
-
-// Activate event
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
-    );
-    self.clients.claim();
-});
-
-// Fetch event
-self.addEventListener('fetch', (event) => {
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request).catch(() => {
-                return caches.match(OFFLINE_URL);
-            })
-        );
-    } else {
-        event.respondWith(
-            caches.match(event.request).then((response) => {
-                return response || fetch(event.request);
-            })
-        );
-    }
-});
-"""
-        return Response(content=sw_content, media_type="application/javascript")
     
     return app
 
@@ -170,4 +118,3 @@ if __name__ == "__main__":
         port=settings.port,
         reload=settings.debug,
     )
-

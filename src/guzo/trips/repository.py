@@ -58,36 +58,109 @@ class TripRepository(BaseRepository[DriverTrip]):
         return [t for t in trips if t.remaining_seats >= min_seats]
     
     async def book_seats(self, trip_id: str, seats: int) -> bool:
-        """Book seats on a trip."""
-        trip = await self.get_by_id(trip_id)
-        if not trip or trip.remaining_seats < seats:
+        """
+        Atomically book seats on a trip.
+        Uses MongoDB's findAndModify to prevent race conditions.
+        """
+        from beanie import PydanticObjectId
+        
+        try:
+            trip_oid = PydanticObjectId(trip_id)
+        except Exception:
             return False
         
-        trip.booked_seats += seats
-        trip.updated_at = datetime.utcnow()
-        await trip.save()
-        return True
+        # Atomic update: only succeeds if there are enough available seats
+        # $expr compares available_seats - booked_seats >= seats
+        result = await DriverTrip.find_one(
+            {
+                "_id": trip_oid,
+                "status": TripStatus.SCHEDULED,
+                "$expr": {"$gte": [{"$subtract": ["$available_seats", "$booked_seats"]}, seats]},
+            }
+        ).update(
+            {
+                "$inc": {"booked_seats": seats},
+                "$set": {"updated_at": datetime.utcnow()},
+            }
+        )
+        
+        return result is not None and result.modified_count > 0
     
     async def release_seats(self, trip_id: str, seats: int) -> bool:
-        """Release booked seats on a trip."""
-        trip = await self.get_by_id(trip_id)
+        """
+        Atomically release booked seats on a trip.
+        Ensures booked_seats doesn't go below 0.
+        """
+        from beanie import PydanticObjectId
+        
+        try:
+            trip_oid = PydanticObjectId(trip_id)
+        except Exception:
+            return False
+        
+        # First check if trip exists and has enough booked seats
+        trip = await DriverTrip.find_one({"_id": trip_oid})
         if not trip:
             return False
         
-        trip.booked_seats = max(0, trip.booked_seats - seats)
+        # Calculate the actual seats to release (don't go below 0)
+        actual_release = min(seats, trip.booked_seats)
+        
+        # Atomic decrement
+        result = await DriverTrip.find_one(
+            {
+                "_id": trip_oid,
+                "booked_seats": {"$gte": actual_release},
+            }
+        ).update(
+            {
+                "$inc": {"booked_seats": -actual_release},
+                "$set": {"updated_at": datetime.utcnow()},
+            }
+        )
+        
+        return result is not None and result.modified_count > 0
+    
+    # Valid status transitions for trips
+    VALID_STATUS_TRANSITIONS = {
+        TripStatus.SCHEDULED: {TripStatus.IN_PROGRESS, TripStatus.CANCELLED},
+        TripStatus.IN_PROGRESS: {TripStatus.COMPLETED, TripStatus.CANCELLED},
+        TripStatus.COMPLETED: set(),  # Terminal state
+        TripStatus.CANCELLED: set(),  # Terminal state
+    }
+    
+    @classmethod
+    def is_valid_status_transition(cls, current: TripStatus, new: TripStatus) -> bool:
+        """Check if a status transition is valid."""
+        return new in cls.VALID_STATUS_TRANSITIONS.get(current, set())
+    
+    async def update_status(
+        self, trip_id: str, status: TripStatus, force: bool = False
+    ) -> Optional[DriverTrip]:
+        """
+        Update trip status with transition validation.
+        
+        Args:
+            trip_id: The trip ID to update
+            status: The new status
+            force: If True, skip transition validation (admin override)
+        """
+        trip = await self.get_by_id(trip_id)
+        if not trip:
+            return None
+        
+        # Validate status transition
+        if not force and not self.is_valid_status_transition(trip.status, status):
+            raise ValueError(
+                f"Invalid status transition: {trip.status.value} -> {status.value}. "
+                f"Valid transitions from {trip.status.value}: "
+                f"{[s.value for s in self.VALID_STATUS_TRANSITIONS.get(trip.status, set())]}"
+            )
+        
+        trip.status = status
         trip.updated_at = datetime.utcnow()
         await trip.save()
-        return True
-    
-    async def update_status(self, trip_id: str, status: TripStatus) -> Optional[DriverTrip]:
-        """Update trip status."""
-        trip = await self.get_by_id(trip_id)
-        if trip:
-            trip.status = status
-            trip.updated_at = datetime.utcnow()
-            await trip.save()
-            return trip
-        return None
+        return trip
 
 
 # Singleton instance

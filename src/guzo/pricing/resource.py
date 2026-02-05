@@ -2,126 +2,111 @@
 
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 
 from src.guzo.auth.core import User
 from src.guzo.middleware import get_current_admin
 from src.guzo.pricing.core import (
     PricingRuleCreate,
     PricingRuleUpdate,
+    PricingRuleResponse,
     SurgeCreate,
-    SurgeUpdate,
-    SurgeReason,
+    SurgeResponse,
+    PriceCalculation,
+    DemandStats,
 )
 from src.guzo.pricing.service import PricingService
 
 router = APIRouter(prefix="/pricing", tags=["Pricing"])
-templates = Jinja2Templates(directory="src/guzo/templates")
+
+
+class DeleteResponse(BaseModel):
+    """Response for successful delete operations."""
+    status: str = "deleted"
 
 
 # ============== Public Pricing Calculation ==============
 
-@router.get("/calculate", response_class=HTMLResponse)
+@router.get("/calculate", response_model=PriceCalculation)
 async def calculate_route_price(
-    request: Request,
     origin: str,
     destination: str,
 ):
     """Calculate price for a route (public)."""
     calc = await PricingService.calculate_price(origin, destination)
-    
-    return templates.TemplateResponse(
-        "partials/price_calculation.html",
-        {
-            "request": request,
-            "calculation": calc,
-            "origin": origin,
-            "destination": destination,
-        },
-    )
+    return calc
 
 
 # ============== Admin: Pricing Rules ==============
 
-@router.get("/rules", response_class=HTMLResponse)
-async def get_pricing_rules(
-    request: Request,
-    user: User = Depends(get_current_admin),
-):
+@router.get("/rules", response_model=list[PricingRuleResponse])
+async def get_pricing_rules(user: User = Depends(get_current_admin)):
     """Get all pricing rules (admin)."""
     rules = await PricingService.get_all_pricing_rules()
-    
-    return templates.TemplateResponse(
-        "partials/pricing_rules.html",
-        {
-            "request": request,
-            "rules": rules,
-            "user": user,
-        },
-    )
+    return [
+        PricingRuleResponse(
+            id=str(r.id),
+            origin=r.origin,
+            destination=r.destination,
+            base_fare=r.base_fare,
+            per_km_rate=r.per_km_rate,
+            estimated_distance_km=r.estimated_distance_km,
+            calculated_price=r.calculated_price,
+            is_active=r.is_active,
+            created_at=r.created_at,
+        )
+        for r in rules
+    ]
 
 
-@router.post("/rules", response_class=HTMLResponse)
+@router.post("/rules", response_model=PricingRuleResponse)
 async def create_pricing_rule(
-    request: Request,
+    data: PricingRuleCreate,
     user: User = Depends(get_current_admin),
-    origin: str = Form(...),
-    destination: str = Form(...),
-    base_fare: float = Form(...),
-    per_km_rate: float = Form(...),
-    estimated_distance_km: float = Form(...),
 ):
     """Create a new pricing rule (admin)."""
-    data = PricingRuleCreate(
-        origin=origin,
-        destination=destination,
-        base_fare=base_fare,
-        per_km_rate=per_km_rate,
-        estimated_distance_km=estimated_distance_km,
-    )
-    
     rule = await PricingService.create_pricing_rule(data)
-    
-    return templates.TemplateResponse(
-        "partials/pricing_rule_row.html",
-        {
-            "request": request,
-            "rule": rule,
-        },
+    return PricingRuleResponse(
+        id=str(rule.id),
+        origin=rule.origin,
+        destination=rule.destination,
+        base_fare=rule.base_fare,
+        per_km_rate=rule.per_km_rate,
+        estimated_distance_km=rule.estimated_distance_km,
+        calculated_price=rule.calculated_price,
+        is_active=rule.is_active,
+        created_at=rule.created_at,
     )
 
 
-@router.put("/rules/{rule_id}", response_class=HTMLResponse)
+@router.patch("/rules/{rule_id}", response_model=PricingRuleResponse)
 async def update_pricing_rule(
-    request: Request,
     rule_id: str,
+    data: PricingRuleUpdate,
     user: User = Depends(get_current_admin),
-    base_fare: Optional[float] = Form(None),
-    per_km_rate: Optional[float] = Form(None),
-    estimated_distance_km: Optional[float] = Form(None),
-    is_active: Optional[bool] = Form(None),
 ):
     """Update a pricing rule (admin)."""
-    data = PricingRuleUpdate(
-        base_fare=base_fare,
-        per_km_rate=per_km_rate,
-        estimated_distance_km=estimated_distance_km,
-        is_active=is_active,
-    )
-    
     rule = await PricingService.update_pricing_rule(rule_id, data)
     
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
     
-    return HTMLResponse('<span class="text-green-600">Updated</span>')
+    return PricingRuleResponse(
+        id=str(rule.id),
+        origin=rule.origin,
+        destination=rule.destination,
+        base_fare=rule.base_fare,
+        per_km_rate=rule.per_km_rate,
+        estimated_distance_km=rule.estimated_distance_km,
+        calculated_price=rule.calculated_price,
+        is_active=rule.is_active,
+        created_at=rule.created_at,
+    )
 
 
-@router.delete("/rules/{rule_id}", response_class=HTMLResponse)
+@router.delete("/rules/{rule_id}", response_model=DeleteResponse)
 async def delete_pricing_rule(
-    request: Request,
     rule_id: str,
     user: User = Depends(get_current_admin),
 ):
@@ -131,65 +116,58 @@ async def delete_pricing_rule(
     if not success:
         raise HTTPException(status_code=404, detail="Rule not found")
     
-    return HTMLResponse('')
+    return DeleteResponse()
 
 
 # ============== Admin: Surge Multipliers ==============
 
-@router.get("/surges", response_class=HTMLResponse)
+@router.get("/surges", response_model=list[SurgeResponse])
 async def get_surge_multipliers(
-    request: Request,
     user: User = Depends(get_current_admin),
     active_only: bool = False,
 ):
     """Get all surge multipliers (admin)."""
     surges = await PricingService.get_all_surges(active_only)
-    
-    return templates.TemplateResponse(
-        "partials/surge_list.html",
-        {
-            "request": request,
-            "surges": surges,
-            "user": user,
-        },
-    )
+    return [
+        SurgeResponse(
+            id=str(s.id),
+            route_key=s.route_key,
+            multiplier=s.multiplier,
+            reason=s.reason,
+            description=s.description,
+            start_time=s.start_time,
+            end_time=s.end_time,
+            is_active=s.is_active,
+            is_recurring=s.is_recurring,
+            created_at=s.created_at,
+        )
+        for s in surges
+    ]
 
 
-@router.post("/surges", response_class=HTMLResponse)
+@router.post("/surges", response_model=SurgeResponse)
 async def create_surge(
-    request: Request,
+    data: SurgeCreate,
     user: User = Depends(get_current_admin),
-    route_key: str = Form(...),
-    multiplier: float = Form(...),
-    reason: str = Form("manual"),
-    description: Optional[str] = Form(None),
-    start_time: str = Form(...),
-    end_time: str = Form(...),
 ):
     """Create a new surge multiplier (admin)."""
-    data = SurgeCreate(
-        route_key=route_key,
-        multiplier=multiplier,
-        reason=SurgeReason(reason),
-        description=description,
-        start_time=datetime.fromisoformat(start_time),
-        end_time=datetime.fromisoformat(end_time),
-    )
-    
     surge = await PricingService.create_surge(data, str(user.id))
-    
-    return templates.TemplateResponse(
-        "partials/surge_row.html",
-        {
-            "request": request,
-            "surge": surge,
-        },
+    return SurgeResponse(
+        id=str(surge.id),
+        route_key=surge.route_key,
+        multiplier=surge.multiplier,
+        reason=surge.reason,
+        description=surge.description,
+        start_time=surge.start_time,
+        end_time=surge.end_time,
+        is_active=surge.is_active,
+        is_recurring=surge.is_recurring,
+        created_at=surge.created_at,
     )
 
 
-@router.post("/surges/{surge_id}/deactivate", response_class=HTMLResponse)
+@router.post("/surges/{surge_id}/deactivate", response_model=SurgeResponse)
 async def deactivate_surge(
-    request: Request,
     surge_id: str,
     user: User = Depends(get_current_admin),
 ):
@@ -199,12 +177,22 @@ async def deactivate_surge(
     if not surge:
         raise HTTPException(status_code=404, detail="Surge not found")
     
-    return HTMLResponse('<span class="badge-apple badge-warning">Inactive</span>')
+    return SurgeResponse(
+        id=str(surge.id),
+        route_key=surge.route_key,
+        multiplier=surge.multiplier,
+        reason=surge.reason,
+        description=surge.description,
+        start_time=surge.start_time,
+        end_time=surge.end_time,
+        is_active=surge.is_active,
+        is_recurring=surge.is_recurring,
+        created_at=surge.created_at,
+    )
 
 
-@router.delete("/surges/{surge_id}", response_class=HTMLResponse)
+@router.delete("/surges/{surge_id}", response_model=DeleteResponse)
 async def delete_surge(
-    request: Request,
     surge_id: str,
     user: User = Depends(get_current_admin),
 ):
@@ -214,29 +202,18 @@ async def delete_surge(
     if not success:
         raise HTTPException(status_code=404, detail="Surge not found")
     
-    return HTMLResponse('')
+    return DeleteResponse()
 
 
 # ============== Admin: Demand Analysis ==============
 
-@router.get("/demand", response_class=HTMLResponse)
+@router.get("/demand", response_model=DemandStats)
 async def get_demand_stats(
-    request: Request,
     origin: str,
     destination: str,
-    days: int = 7,
+    days: int = Query(7, ge=1, le=90),
     user: User = Depends(get_current_admin),
 ):
     """Get demand statistics for a route (admin)."""
     stats = await PricingService.get_demand_stats(origin, destination, days)
-    
-    return templates.TemplateResponse(
-        "partials/demand_stats.html",
-        {
-            "request": request,
-            "stats": stats,
-            "origin": origin,
-            "destination": destination,
-        },
-    )
-
+    return stats

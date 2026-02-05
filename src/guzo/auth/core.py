@@ -1,10 +1,24 @@
 """Auth domain models and schemas."""
 
+import re
 from datetime import datetime
 from enum import Enum
 from typing import Optional
 from beanie import Document, Indexed
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+
+# ============== Constants ==============
+
+# Supported languages
+class Language(str, Enum):
+    """Supported languages."""
+    ENGLISH = "en"
+    AMHARIC = "am"
+
+
+# Phone number regex for Ethiopian numbers
+PHONE_REGEX = re.compile(r"^\+?251[97]\d{8}$|^0[97]\d{8}$")
 
 
 # ============== Enums ==============
@@ -40,8 +54,8 @@ class User(Document):
     is_verified: bool = False
     is_online: bool = False  # For drivers - availability status
     
-    # Profile info
-    rating: float = Field(default=5.0, ge=1.0, le=5.0)
+    # Profile info (rating is None until user receives reviews)
+    rating: Optional[float] = Field(default=None, ge=1.0, le=5.0)
     total_ratings: int = 0
     language: str = "en"  # en or am (Amharic)
     profile_image: Optional[str] = None
@@ -82,7 +96,20 @@ class UserCreate(BaseModel):
     full_name: str = Field(min_length=2, max_length=100)
     password: str = Field(min_length=6)
     role: UserRole = UserRole.RIDER
-    language: str = "en"
+    language: Language = Language.ENGLISH
+    
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        """Validate Ethiopian phone number format."""
+        # Normalize phone number
+        phone = v.strip()
+        if not PHONE_REGEX.match(phone):
+            raise ValueError(
+                "Invalid phone number format. Expected Ethiopian format: "
+                "+251911234567 or 0911234567"
+            )
+        return phone
 
 
 class UserLogin(BaseModel):
@@ -101,12 +128,14 @@ class UserResponse(BaseModel):
     is_active: bool
     is_verified: bool
     is_online: bool
-    rating: float
+    rating: Optional[float] = None  # None until user receives reviews
     total_ratings: int
     language: str
     profile_image: Optional[str] = None
     verification_status: Optional[VerificationStatus] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    last_login: Optional[datetime] = None
     
     class Config:
         from_attributes = True

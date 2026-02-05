@@ -81,12 +81,21 @@ class ReviewService:
         limit: int = 50,
     ) -> list[ReviewResponse]:
         """Get reviews received by a user with reviewer info."""
+        from beanie import PydanticObjectId
+        
         reviews = await ReviewRepository.get_reviews_for_user(user_id, limit)
+        
+        if not reviews:
+            return []
+        
+        # Batch fetch all reviewers in one query (fix N+1)
+        reviewer_ids = [PydanticObjectId(r.reviewer_id) for r in reviews]
+        reviewers = await User.find({"_id": {"$in": reviewer_ids}}).to_list()
+        reviewers_map = {str(u.id): u for u in reviewers}
         
         responses = []
         for review in reviews:
-            from beanie import PydanticObjectId
-            reviewer = await User.get(PydanticObjectId(review.reviewer_id))
+            reviewer = reviewers_map.get(review.reviewer_id)
             
             responses.append(ReviewResponse(
                 id=str(review.id),
@@ -121,16 +130,32 @@ class ReviewService:
                 Booking.driver_review_id == None,
             ).to_list()
         
+        if not bookings:
+            return []
+        
+        # Collect all other party IDs (fix N+1)
+        other_ids = []
+        for booking in bookings:
+            if user.role == UserRole.RIDER:
+                other_id = booking.assigned_driver_id
+            else:
+                other_id = booking.customer_id
+            if other_id:
+                other_ids.append(PydanticObjectId(other_id))
+        
+        # Batch fetch all users in one query
+        other_users = await User.find({"_id": {"$in": other_ids}}).to_list()
+        users_map = {str(u.id): u for u in other_users}
+        
         pending = []
         for booking in bookings:
-            # Get the other party's info
             if user.role == UserRole.RIDER:
                 other_id = booking.assigned_driver_id
             else:
                 other_id = booking.customer_id
             
             if other_id:
-                other_user = await User.get(PydanticObjectId(other_id))
+                other_user = users_map.get(other_id)
                 pending.append({
                     "booking": booking,
                     "reviewee": other_user,

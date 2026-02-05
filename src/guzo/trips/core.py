@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 from beanie import Document, Indexed
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ============== Enums ==============
@@ -42,7 +42,7 @@ class DriverTrip(Document):
     whole_car_price: float = Field(gt=0)
     
     # Status
-    status: TripStatus = TripStatus.SCHEDULED
+    status: Indexed(TripStatus) = TripStatus.SCHEDULED
     
     # Additional info
     notes: Optional[str] = None
@@ -54,6 +54,12 @@ class DriverTrip(Document):
     
     class Settings:
         name = "driver_trips"
+        indexes = [
+            # Compound indexes for common queries
+            [("status", 1), ("departure_time", 1)],
+            [("origin", 1), ("destination", 1), ("departure_time", 1)],
+            [("driver_id", 1), ("status", 1)],
+        ]
         
     @property
     def remaining_seats(self) -> int:
@@ -92,6 +98,12 @@ class TripCreate(BaseModel):
     vehicle_id: Optional[str] = None
     notes: Optional[str] = None
     waypoints: list[str] = Field(default_factory=list)
+    
+    @field_validator("price_per_seat", "whole_car_price")
+    @classmethod
+    def validate_price_precision(cls, v: float) -> float:
+        """Ensure price has at most 2 decimal places."""
+        return round(v, 2)
 
 
 class TripUpdate(BaseModel):
@@ -115,6 +127,7 @@ class TripResponse(BaseModel):
     origin: str
     destination: str
     departure_time: datetime
+    estimated_arrival: Optional[datetime] = None
     available_seats: int
     booked_seats: int
     remaining_seats: int
@@ -122,7 +135,9 @@ class TripResponse(BaseModel):
     whole_car_price: float
     status: TripStatus
     notes: Optional[str] = None
+    waypoints: list[str] = []
     created_at: datetime
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

@@ -48,13 +48,42 @@ class BookingRepository(BaseRepository[Booking]):
             Booking.status == status
         ).sort("-created_at").limit(limit).to_list()
     
+    # Valid status transitions for bookings
+    VALID_STATUS_TRANSITIONS = {
+        BookingStatus.PENDING: {BookingStatus.CONFIRMED, BookingStatus.CANCELLED},
+        BookingStatus.CONFIRMED: {BookingStatus.IN_PROGRESS, BookingStatus.CANCELLED},
+        BookingStatus.IN_PROGRESS: {BookingStatus.COMPLETED, BookingStatus.CANCELLED},
+        BookingStatus.COMPLETED: set(),  # Terminal state
+        BookingStatus.CANCELLED: set(),  # Terminal state
+    }
+    
+    @classmethod
+    def is_valid_status_transition(cls, current: BookingStatus, new: BookingStatus) -> bool:
+        """Check if a status transition is valid."""
+        return new in cls.VALID_STATUS_TRANSITIONS.get(current, set())
+    
     async def update_status(
-        self, booking_id: str, status: BookingStatus
+        self, booking_id: str, status: BookingStatus, force: bool = False
     ) -> Optional[Booking]:
-        """Update booking status."""
+        """
+        Update booking status with transition validation.
+        
+        Args:
+            booking_id: The booking ID to update
+            status: The new status
+            force: If True, skip transition validation (admin override)
+        """
         booking = await self.get_by_id(booking_id)
         if not booking:
             return None
+        
+        # Validate status transition
+        if not force and not self.is_valid_status_transition(booking.status, status):
+            raise ValueError(
+                f"Invalid status transition: {booking.status.value} -> {status.value}. "
+                f"Valid transitions from {booking.status.value}: "
+                f"{[s.value for s in self.VALID_STATUS_TRANSITIONS.get(booking.status, set())]}"
+            )
         
         booking.status = status
         booking.updated_at = datetime.utcnow()
@@ -74,14 +103,17 @@ class BookingRepository(BaseRepository[Booking]):
         trip_id: Optional[str] = None,
         price: Optional[float] = None,
     ) -> Optional[Booking]:
-        """Assign a driver to a booking."""
+        """
+        Assign a driver to a booking.
+        
+        Note: This method only updates the driver assignment fields.
+        Status changes should be handled by the service layer.
+        """
         booking = await self.get_by_id(booking_id)
         if not booking:
             return None
         
         booking.assigned_driver_id = driver_id
-        booking.status = BookingStatus.CONFIRMED
-        booking.confirmed_at = datetime.utcnow()
         booking.updated_at = datetime.utcnow()
         
         if trip_id:

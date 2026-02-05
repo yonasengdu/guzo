@@ -2,367 +2,400 @@
 
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
-from src.guzo.auth.core import User, UserRole
-from src.guzo.bookings.core import BookingStatus, BookingType, BookingCreate
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from src.guzo.auth.core import User, UserRole, UserResponse
+from src.guzo.bookings.core import BookingStatus, BookingType, BookingCreate, BookingResponse, BookingUpdate
 from src.guzo.bookings.service import BookingService
-from src.guzo.trips.core import TripUpdate
+from src.guzo.trips.core import TripUpdate, TripResponse
 from src.guzo.trips.service import TripService
 from src.guzo.middleware import get_current_admin
 from src.guzo.admin.service import AdminService
+from src.guzo.analytics.core import PlatformStats
+from src.guzo.verification.core import VerificationResponse, VerificationStats
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
-templates = Jinja2Templates(directory="src/guzo/templates")
 
 
-@router.get("", response_class=HTMLResponse)
-async def admin_dashboard(
-    request: Request,
-    user: User = Depends(get_current_admin),
-):
-    """Admin dashboard page."""
+# ============== Request/Response Models ==============
+
+class DashboardStats(BaseModel):
+    """Dashboard statistics."""
+    total_users: int
+    total_trips: int
+    total_bookings: int
+    total_revenue: float
+
+
+class DashboardResponse(BaseModel):
+    """Response for admin dashboard."""
+    stats: DashboardStats
+    users: list[UserResponse]
+    trips: list[TripResponse]
+    bookings: list[BookingResponse]
+
+
+class UsersResponse(BaseModel):
+    """Response for users list."""
+    users: list[UserResponse]
+    counts: dict
+
+
+class PhoneBookingCreate(BaseModel):
+    """Request for creating a phone booking."""
+    customer_name: str
+    customer_phone: str
+    pickup_location: str
+    dropoff_location: str
+    scheduled_time: datetime
+    seats_booked: int = 1
+    price: Optional[float] = None
+    assigned_driver_id: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class AssignDriverRequest(BaseModel):
+    """Request for assigning a driver."""
+    driver_id: str
+    trip_id: Optional[str] = None
+    price: Optional[float] = None
+
+
+class UpdatePriceRequest(BaseModel):
+    """Request for updating price."""
+    price: float
+
+
+class UpdateTripPriceRequest(BaseModel):
+    """Request for updating trip price."""
+    price_per_seat: Optional[float] = None
+    whole_car_price: Optional[float] = None
+
+
+class TripDetailResponse(BaseModel):
+    """Detailed trip response with bookings."""
+    trip: TripResponse
+    bookings: list[BookingResponse]
+
+
+class VerificationsResponse(BaseModel):
+    """Response for verifications list endpoint."""
+    verifications: list[VerificationResponse]
+    stats: VerificationStats
+
+
+class LocationsResponse(BaseModel):
+    """Response for locations list endpoint."""
+    locations: list[str]
+
+
+class VerificationsResponse(BaseModel):
+    """Response for verifications list."""
+    verifications: list
+    stats: dict
+
+
+class LocationsResponse(BaseModel):
+    """Response for locations list."""
+    locations: list[str]
+
+
+class DeleteResponse(BaseModel):
+    """Response for successful delete operations."""
+    status: str = "deleted"
+
+
+# ============== Helper Functions ==============
+
+def _user_to_response(user: User) -> UserResponse:
+    """Convert User model to UserResponse."""
+    return UserResponse(
+        id=str(user.id),
+        email=user.email,
+        phone=user.phone,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
+        is_online=user.is_online,
+        rating=user.rating,
+        language=user.language,
+        created_at=user.created_at,
+    )
+
+
+def _booking_to_response(b) -> BookingResponse:
+    """Convert Booking model to BookingResponse."""
+    return BookingResponse(
+        id=str(b.id),
+        customer_id=b.customer_id,
+        customer_name=b.customer_name,
+        customer_phone=b.customer_phone,
+        trip_id=b.trip_id,
+        booking_type=b.booking_type,
+        pickup_location=b.pickup_location,
+        dropoff_location=b.dropoff_location,
+        scheduled_time=b.scheduled_time,
+        seats_booked=b.seats_booked,
+        price=b.price,
+        status=b.status,
+        assigned_driver_id=b.assigned_driver_id,
+        notes=b.notes,
+        created_at=b.created_at,
+        completed_at=b.completed_at,
+    )
+
+
+def _trip_to_response(t) -> TripResponse:
+    """Convert Trip model to TripResponse."""
+    return TripResponse(
+        id=str(t.id),
+        driver_id=t.driver_id,
+        driver_name=getattr(t, 'driver_name', None),
+        driver_phone=getattr(t, 'driver_phone', None),
+        driver_rating=getattr(t, 'driver_rating', None),
+        vehicle_id=t.vehicle_id,
+        origin=t.origin,
+        destination=t.destination,
+        departure_time=t.departure_time,
+        available_seats=t.available_seats,
+        booked_seats=t.booked_seats,
+        remaining_seats=t.available_seats - t.booked_seats,
+        price_per_seat=t.price_per_seat,
+        whole_car_price=t.whole_car_price,
+        status=t.status,
+        notes=t.notes,
+        created_at=t.created_at,
+    )
+
+
+# ============== Endpoints ==============
+
+@router.get("/dashboard", response_model=DashboardResponse)
+async def get_dashboard(user: User = Depends(get_current_admin)):
+    """Get admin dashboard data."""
     stats = await AdminService.get_dashboard_stats()
     
-    return templates.TemplateResponse(
-        "admin/dashboard.html",
-        {
-            "request": request,
-            "user": user,
-            "users": stats.users,
-            "trips": stats.trips,
-            "bookings": stats.bookings,
-            "stats": {
-                "total_users": stats.total_users,
-                "total_trips": stats.total_trips,
-                "total_bookings": stats.total_bookings,
-                "total_revenue": stats.total_revenue,
-            },
-            "active_tab": "dashboard",
-        },
+    return DashboardResponse(
+        stats=DashboardStats(
+            total_users=stats.total_users,
+            total_trips=stats.total_trips,
+            total_bookings=stats.total_bookings,
+            total_revenue=stats.total_revenue,
+        ),
+        users=[_user_to_response(u) for u in stats.users[:10]],
+        trips=[_trip_to_response(t) for t in stats.trips[:10]],
+        bookings=[_booking_to_response(b) for b in stats.bookings[:10]],
     )
 
 
-@router.get("/users", response_class=HTMLResponse)
-async def admin_users_page(
-    request: Request,
+@router.get("/users", response_model=UsersResponse)
+async def get_users(
     user: User = Depends(get_current_admin),
-    role: Optional[str] = None,
+    role: Optional[UserRole] = None,
 ):
-    """Admin users management page."""
-    role_enum = UserRole(role) if role else None
-    users, counts = await AdminService.get_users(role=role_enum)
-    
-    # Return partial for HTMX requests (tab switching)
-    if request.headers.get("HX-Request"):
-        return templates.TemplateResponse(
-            "partials/admin_users_list.html",
-            {
-                "request": request,
-                "users": users,
-                "role_filter": role,
-                "counts": counts,
-            },
-        )
-    
-    return templates.TemplateResponse(
-        "admin/users.html",
-        {
-            "request": request,
-            "user": user,
-            "users": users,
-            "role_filter": role,
-            "counts": counts,
-            "active_tab": "users",
-        },
+    """Get all users with optional role filter."""
+    users, counts = await AdminService.get_users(role=role)
+    return UsersResponse(
+        users=[_user_to_response(u) for u in users],
+        counts=counts,
     )
 
 
-@router.get("/drivers", response_class=HTMLResponse)
-async def get_drivers(
-    request: Request,
-    user: User = Depends(get_current_admin),
-):
-    """Get all drivers (HTMX partial)."""
+@router.get("/drivers", response_model=list[UserResponse])
+async def get_drivers(user: User = Depends(get_current_admin)):
+    """Get all drivers."""
     drivers = await AdminService.get_drivers()
-    
-    return templates.TemplateResponse(
-        "partials/admin_drivers.html",
-        {
-            "request": request,
-            "drivers": drivers,
-        },
-    )
+    return [_user_to_response(d) for d in drivers]
 
 
-@router.get("/trips", response_class=HTMLResponse)
+@router.get("/trips", response_model=list[TripResponse])
 async def get_all_trips(
-    request: Request,
+    user: User = Depends(get_current_admin),
+    limit: int = Query(100, le=500),
+):
+    """Get all trips."""
+    trips = await TripService.get_upcoming_trips(limit=limit)
+    return [_trip_to_response(t) for t in trips]
+
+
+@router.get("/trips/{trip_id}", response_model=TripDetailResponse)
+async def get_trip_detail(
+    trip_id: str,
     user: User = Depends(get_current_admin),
 ):
-    """Get all trips page or HTMX partial."""
-    trips = await TripService.get_upcoming_trips(limit=100)
+    """Get trip details with bookings."""
+    trip = await TripService.get_trip_with_driver(trip_id)
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
     
-    # Return partial for HTMX requests
-    if request.headers.get("HX-Request"):
-        return templates.TemplateResponse(
-            "partials/admin_trips.html",
-            {
-                "request": request,
-                "trips": trips,
-            },
-        )
+    bookings = await BookingService.get_trip_bookings(trip_id)
     
-    return templates.TemplateResponse(
-        "admin/trips.html",
-        {
-            "request": request,
-            "user": user,
-            "trips": trips,
-            "active_tab": "trips",
-        },
+    return TripDetailResponse(
+        trip=_trip_to_response(trip),
+        bookings=[_booking_to_response(b) for b in bookings],
     )
 
 
-@router.get("/bookings", response_class=HTMLResponse)
+@router.delete("/trips/{trip_id}", response_model=DeleteResponse)
+async def delete_trip(
+    trip_id: str,
+    user: User = Depends(get_current_admin),
+):
+    """Delete a trip."""
+    success = await TripService.delete_trip(trip_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return DeleteResponse()
+
+
+@router.get("/bookings", response_model=list[BookingResponse])
 async def get_all_bookings(
-    request: Request,
     user: User = Depends(get_current_admin),
-    status: Optional[str] = None,
+    status: Optional[BookingStatus] = None,
 ):
-    """Get all bookings (HTMX partial)."""
-    booking_status = BookingStatus(status) if status else None
-    bookings = await BookingService.get_all_bookings(status=booking_status)
-    
-    return templates.TemplateResponse(
-        "partials/admin_bookings.html",
-        {
-            "request": request,
-            "bookings": bookings,
-        },
-    )
+    """Get all bookings with optional status filter."""
+    bookings = await BookingService.get_all_bookings(status=status)
+    return [_booking_to_response(b) for b in bookings]
 
 
-@router.get("/requests", response_class=HTMLResponse)
-async def get_pending_requests(
-    request: Request,
-    user: User = Depends(get_current_admin),
-):
-    """Get pending charter requests (HTMX partial)."""
+@router.get("/requests", response_model=list[BookingResponse])
+async def get_pending_requests(user: User = Depends(get_current_admin)):
+    """Get pending charter requests."""
     pending_requests = await BookingService.get_pending_requests()
-    trips = await TripService.get_upcoming_trips(limit=50)
-    drivers = await AdminService.get_drivers()
-    
-    return templates.TemplateResponse(
-        "partials/admin_requests.html",
-        {
-            "request": request,
-            "pending_requests": pending_requests,
-            "trips": trips,
-            "drivers": drivers,
-        },
-    )
+    return [_booking_to_response(r) for r in pending_requests]
 
 
-@router.post("/booking/create", response_class=HTMLResponse)
+@router.post("/bookings", response_model=BookingResponse)
 async def create_phone_booking(
-    request: Request,
+    booking_data: PhoneBookingCreate,
     user: User = Depends(get_current_admin),
-    customer_name: str = Form(...),
-    customer_phone: str = Form(...),
-    pickup_location: str = Form(...),
-    dropoff_location: str = Form(...),
-    scheduled_time: str = Form(...),
-    seats_booked: int = Form(1),
-    price: Optional[float] = Form(None),
-    assigned_driver_id: Optional[str] = Form(None),
-    notes: Optional[str] = Form(None),
 ):
     """Create a booking from phone call (admin)."""
     try:
-        booking_data = BookingCreate(
+        create_data = BookingCreate(
             trip_id=None,
-            customer_name=customer_name,
-            customer_phone=customer_phone,
-            pickup_location=pickup_location,
-            dropoff_location=dropoff_location,
-            scheduled_time=datetime.fromisoformat(scheduled_time),
-            seats_booked=seats_booked,
+            customer_name=booking_data.customer_name,
+            customer_phone=booking_data.customer_phone,
+            pickup_location=booking_data.pickup_location,
+            dropoff_location=booking_data.dropoff_location,
+            scheduled_time=booking_data.scheduled_time,
+            seats_booked=booking_data.seats_booked,
             booking_type=BookingType.CHARTER,
-            notes=notes,
+            notes=booking_data.notes,
         )
         
-        booking = await BookingService.create_booking(booking_data)
+        booking = await BookingService.create_booking(create_data)
         
-        if assigned_driver_id:
-            await BookingService.assign_driver(
+        if booking_data.assigned_driver_id:
+            booking = await BookingService.assign_driver(
                 str(booking.id),
-                assigned_driver_id,
-                price=float(price) if price else None,
+                booking_data.assigned_driver_id,
+                price=booking_data.price,
             )
-        elif price:
-            from src.guzo.bookings.core import BookingUpdate
-            await BookingService.update_booking(
+        elif booking_data.price:
+            booking = await BookingService.update_booking(
                 str(booking.id),
-                BookingUpdate(price=float(price)),
+                BookingUpdate(price=booking_data.price),
             )
         
-        if request.headers.get("HX-Request"):
-            return HTMLResponse('<div class="alert alert-success">Booking created successfully!</div>')
-        
-        return RedirectResponse(url="/admin", status_code=303)
+        return _booking_to_response(booking)
         
     except Exception as e:
-        if request.headers.get("HX-Request"):
-            return HTMLResponse(
-                f'<div class="alert alert-error">Error: {str(e)}</div>',
-                status_code=400,
-            )
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/request/{request_id}/assign")
+@router.post("/requests/{request_id}/assign", response_model=BookingResponse)
 async def assign_request(
-    request: Request,
     request_id: str,
+    assign_data: AssignDriverRequest,
     user: User = Depends(get_current_admin),
-    driver_id: str = Form(...),
-    trip_id: Optional[str] = Form(None),
-    price: Optional[float] = Form(None),
 ):
     """Assign a driver to a charter request."""
     booking = await BookingService.assign_driver(
         request_id,
-        driver_id,
-        trip_id=trip_id,
-        price=float(price) if price else None,
+        assign_data.driver_id,
+        trip_id=assign_data.trip_id,
+        price=assign_data.price,
     )
     
     if not booking:
         raise HTTPException(status_code=404, detail="Request not found")
     
-    if request.headers.get("HX-Request"):
-        return HTMLResponse('<div class="alert alert-success">Driver assigned successfully!</div>')
-    
-    return RedirectResponse(url="/admin", status_code=303)
+    return _booking_to_response(booking)
 
 
-@router.post("/booking/{booking_id}/update-price")
+@router.patch("/bookings/{booking_id}/price", response_model=BookingResponse)
 async def update_booking_price(
-    request: Request,
     booking_id: str,
+    price_data: UpdatePriceRequest,
     user: User = Depends(get_current_admin),
-    price: float = Form(...),
 ):
     """Update booking price."""
-    from src.guzo.bookings.core import BookingUpdate
-    
     booking = await BookingService.update_booking(
         booking_id,
-        BookingUpdate(price=float(price)),
+        BookingUpdate(price=price_data.price),
     )
     
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
-    if request.headers.get("HX-Request"):
-        return HTMLResponse(f'<span class="font-bold">{price} ETB</span>')
-    
-    return RedirectResponse(url="/admin", status_code=303)
+    return _booking_to_response(booking)
 
 
-@router.post("/trip/{trip_id}/update-price")
+@router.patch("/trips/{trip_id}/price", response_model=TripResponse)
 async def update_trip_price(
-    request: Request,
     trip_id: str,
+    price_data: UpdateTripPriceRequest,
     user: User = Depends(get_current_admin),
-    price_per_seat: Optional[float] = Form(None),
-    whole_car_price: Optional[float] = Form(None),
 ):
     """Update trip pricing."""
-    update_data = TripUpdate()
-    if price_per_seat:
-        update_data.price_per_seat = float(price_per_seat)
-    if whole_car_price:
-        update_data.whole_car_price = float(whole_car_price)
+    update_data = TripUpdate(
+        price_per_seat=price_data.price_per_seat,
+        whole_car_price=price_data.whole_car_price,
+    )
     
     trip = await TripService.update_trip(trip_id, update_data)
     
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
     
-    if request.headers.get("HX-Request"):
-        return HTMLResponse('<div class="alert alert-success">Price updated!</div>')
-    
-    return RedirectResponse(url="/admin", status_code=303)
+    return _trip_to_response(trip)
 
 
-@router.post("/user/{user_id}/activate")
+@router.patch("/users/{user_id}/activate", response_model=UserResponse)
 async def activate_user(
-    request: Request,
     user_id: str,
     user: User = Depends(get_current_admin),
 ):
-    """Activate a user account."""
+    """Activate a user account (state change)."""
     try:
-        await AdminService.activate_user(user_id, user)
+        updated_user = await AdminService.activate_user(user_id, user)
+        return _user_to_response(updated_user)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    
-    if request.headers.get("HX-Request"):
-        return HTMLResponse('<span class="badge-apple badge-success">Active</span>')
-    
-    return RedirectResponse(url="/admin", status_code=303)
 
 
-@router.post("/user/{user_id}/deactivate")
+@router.patch("/users/{user_id}/deactivate", response_model=UserResponse)
 async def deactivate_user(
-    request: Request,
     user_id: str,
     user: User = Depends(get_current_admin),
 ):
-    """Deactivate a user account."""
+    """Deactivate a user account (state change)."""
     try:
-        await AdminService.deactivate_user(user_id, user)
+        updated_user = await AdminService.deactivate_user(user_id, user)
+        return _user_to_response(updated_user)
     except ValueError as e:
         if "your own account" in str(e):
             raise HTTPException(status_code=400, detail=str(e))
         raise HTTPException(status_code=404, detail=str(e))
-    
-    if request.headers.get("HX-Request"):
-        return HTMLResponse('<span class="badge-apple badge-error">Inactive</span>')
-    
-    return RedirectResponse(url="/admin", status_code=303)
 
 
-@router.delete("/trip/{trip_id}")
-async def delete_trip(
-    request: Request,
-    trip_id: str,
-    user: User = Depends(get_current_admin),
-):
-    """Delete a trip."""
-    success = await TripService.delete_trip(trip_id)
-    
-    if not success:
-        raise HTTPException(status_code=404, detail="Trip not found")
-    
-    if request.headers.get("HX-Request"):
-        return HTMLResponse('')
-    
-    return RedirectResponse(url="/admin", status_code=303)
-
-
-@router.post("/booking/{booking_id}/confirm")
+@router.patch("/bookings/{booking_id}/confirm", response_model=BookingResponse)
 async def confirm_booking(
-    request: Request,
     booking_id: str,
     user: User = Depends(get_current_admin),
 ):
-    """Confirm a pending booking."""
-    from src.guzo.bookings.core import BookingUpdate
-    
+    """Confirm a pending booking (state change)."""
     booking = await BookingService.update_booking(
         booking_id,
         BookingUpdate(status=BookingStatus.CONFIRMED),
@@ -371,21 +404,15 @@ async def confirm_booking(
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
-    if request.headers.get("HX-Request"):
-        return HTMLResponse('<span class="badge-apple badge-info">Confirmed</span>')
-    
-    return RedirectResponse(url="/admin", status_code=303)
+    return _booking_to_response(booking)
 
 
-@router.post("/booking/{booking_id}/cancel")
-async def cancel_booking_admin(
-    request: Request,
+@router.patch("/bookings/{booking_id}/cancel", response_model=BookingResponse)
+async def cancel_booking(
     booking_id: str,
     user: User = Depends(get_current_admin),
 ):
-    """Cancel a booking."""
-    from src.guzo.bookings.core import BookingUpdate
-    
+    """Cancel a booking (state change)."""
     booking = await BookingService.update_booking(
         booking_id,
         BookingUpdate(status=BookingStatus.CANCELLED),
@@ -394,85 +421,37 @@ async def cancel_booking_admin(
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
-    if request.headers.get("HX-Request"):
-        return HTMLResponse('<span class="badge-apple badge-error">Cancelled</span>')
-    
-    return RedirectResponse(url="/admin", status_code=303)
+    return _booking_to_response(booking)
 
 
-# ============== Phase 2: Analytics, Verification, Pricing Pages ==============
-
-@router.get("/analytics", response_class=HTMLResponse)
-async def admin_analytics_page(
-    request: Request,
+@router.get("/analytics", response_model=PlatformStats)
+async def get_analytics(
     user: User = Depends(get_current_admin),
-    period: str = "week",
+    period: str = Query("week", enum=["today", "week", "month"]),
 ):
-    """Admin analytics dashboard page."""
+    """Get platform analytics."""
     from src.guzo.analytics.service import AnalyticsService
     
     stats = await AnalyticsService.get_platform_stats(period)
-    
-    # Return partial for HTMX requests
-    if request.headers.get("HX-Request"):
-        return templates.TemplateResponse(
-            "partials/analytics_content.html",
-            {
-                "request": request,
-                "stats": stats,
-                "period": period,
-            },
-        )
-    
-    return templates.TemplateResponse(
-        "admin/analytics.html",
-        {
-            "request": request,
-            "user": user,
-            "stats": stats,
-            "period": period,
-            "active_tab": "analytics",
-        },
-    )
+    return stats
 
 
-@router.get("/verification", response_class=HTMLResponse)
-async def admin_verification_page(
-    request: Request,
-    user: User = Depends(get_current_admin),
-):
-    """Admin driver verification page."""
+@router.get("/verifications", response_model=VerificationsResponse)
+async def get_verifications(user: User = Depends(get_current_admin)):
+    """Get pending driver verifications."""
     from src.guzo.verification.service import VerificationService
     
     verifications = await VerificationService.get_pending_verifications()
     stats = await VerificationService.get_verification_stats()
     
-    return templates.TemplateResponse(
-        "admin/verification.html",
-        {
-            "request": request,
-            "user": user,
-            "verifications": verifications,
-            "stats": stats,
-            "active_tab": "verification",
-        },
+    return VerificationsResponse(
+        verifications=verifications,
+        stats=stats,
     )
 
 
-@router.get("/pricing", response_class=HTMLResponse)
-async def admin_pricing_page(
-    request: Request,
-    user: User = Depends(get_current_admin),
-):
-    """Admin pricing rules page."""
+@router.get("/locations", response_model=LocationsResponse)
+async def get_locations(user: User = Depends(get_current_admin)):
+    """Get available locations for pricing rules."""
     from src.guzo.core import LOCATIONS
-    
-    return templates.TemplateResponse(
-        "admin/pricing.html",
-        {
-            "request": request,
-            "user": user,
-            "locations": LOCATIONS,
-            "active_tab": "pricing",
-        },
-    )
+    return LocationsResponse(locations=LOCATIONS)

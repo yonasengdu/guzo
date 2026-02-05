@@ -39,20 +39,20 @@ class Booking(Document):
     trip_id: Optional[Indexed(str)] = None
     
     # Booking details
-    booking_type: BookingType = BookingType.SEAT
+    booking_type: Indexed(BookingType) = BookingType.SEAT
     pickup_location: str
     dropoff_location: str
-    scheduled_time: datetime
+    scheduled_time: Indexed(datetime)
     seats_booked: int = Field(default=1, ge=1)
     
     # Pricing
     price: Optional[float] = None
     
     # Status
-    status: BookingStatus = BookingStatus.PENDING
+    status: Indexed(BookingStatus) = BookingStatus.PENDING
     
     # Assignment
-    assigned_driver_id: Optional[str] = None
+    assigned_driver_id: Optional[Indexed(str)] = None
     
     # Additional info
     notes: Optional[str] = None
@@ -70,6 +70,12 @@ class Booking(Document):
     
     class Settings:
         name = "bookings"
+        indexes = [
+            # Compound indexes for common queries
+            [("customer_id", 1), ("status", 1)],
+            [("assigned_driver_id", 1), ("status", 1)],
+            [("status", 1), ("scheduled_time", 1)],
+        ]
         
     class Config:
         json_schema_extra = {
@@ -128,9 +134,12 @@ class BookingResponse(BaseModel):
     driver_phone: Optional[str] = None
     driver_rating: Optional[float] = None
     notes: Optional[str] = None
+    special_requests: Optional[str] = None
     customer_review_id: Optional[str] = None
     driver_review_id: Optional[str] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    confirmed_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     
     class Config:

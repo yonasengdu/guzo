@@ -1,75 +1,89 @@
 """Verification resource - API routes for driver verification."""
 
+from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Request, Depends, Form, UploadFile, File, HTTPException
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from pydantic import BaseModel
 
 from src.guzo.auth.core import User, UserRole
 from src.guzo.middleware import get_current_user, get_current_admin
-from src.guzo.verification.core import VerificationStatus, VerificationSubmit
+from src.guzo.verification.core import (
+    VerificationStatus,
+    VerificationSubmit,
+    VerificationResponse,
+    VerificationStats,
+)
 from src.guzo.verification.service import VerificationService
 
 router = APIRouter(prefix="/verification", tags=["Verification"])
-templates = Jinja2Templates(directory="src/guzo/templates")
+
+
+# ============== Request/Response Models ==============
+
+class ApproveRequest(BaseModel):
+    """Request for approving verification."""
+    notes: Optional[str] = None
+
+
+class RejectRequest(BaseModel):
+    """Request for rejecting verification."""
+    reason: str
+    notes: Optional[str] = None
+
+
+class VerificationListResponse(BaseModel):
+    """Response for verification list with stats."""
+    verifications: list[VerificationResponse]
+    stats: VerificationStats
+
+
+class VerificationDetailResponse(BaseModel):
+    """Response for verification detail."""
+    verification: VerificationResponse
+    driver_name: Optional[str] = None
+    driver_email: Optional[str] = None
+    driver_phone: Optional[str] = None
 
 
 # ============== Driver Routes ==============
 
-@router.get("/status", response_class=HTMLResponse)
-async def get_verification_status(
-    request: Request,
-    user: User = Depends(get_current_user),
-):
+@router.get("/status", response_model=Optional[VerificationResponse])
+async def get_verification_status(user: User = Depends(get_current_user)):
     """Get current user's verification status."""
     if user.role != UserRole.DRIVER:
         raise HTTPException(status_code=403, detail="Only drivers can access verification")
     
     verification = await VerificationService.get_driver_verification(str(user.id))
     
-    return templates.TemplateResponse(
-        "partials/verification_status.html",
-        {
-            "request": request,
-            "verification": verification,
-            "user": user,
-        },
+    if not verification:
+        return None
+    
+    return VerificationResponse(
+        id=str(verification.id),
+        driver_id=verification.driver_id,
+        profile_photo=verification.profile_photo,
+        license_document=verification.license_document,
+        license_number=verification.license_number,
+        license_expiry=verification.license_expiry,
+        vehicle_registration=verification.vehicle_registration,
+        status=verification.status,
+        admin_notes=verification.admin_notes,
+        rejection_reason=verification.rejection_reason,
+        submitted_at=verification.submitted_at,
+        reviewed_at=verification.reviewed_at,
     )
 
 
-@router.get("/form", response_class=HTMLResponse)
-async def get_verification_form(
-    request: Request,
-    user: User = Depends(get_current_user),
-):
-    """Get verification document upload form."""
-    if user.role != UserRole.DRIVER:
-        raise HTTPException(status_code=403, detail="Only drivers can access verification")
-    
-    verification = await VerificationService.get_driver_verification(str(user.id))
-    
-    return templates.TemplateResponse(
-        "partials/verification_form.html",
-        {
-            "request": request,
-            "verification": verification,
-            "user": user,
-        },
-    )
-
-
-@router.post("/submit", response_class=HTMLResponse)
+@router.post("/submit", response_model=VerificationResponse)
 async def submit_verification(
-    request: Request,
     user: User = Depends(get_current_user),
-    license_number: Optional[str] = Form(None),
-    license_expiry: Optional[str] = Form(None),
+    license_number: Optional[str] = None,
+    license_expiry: Optional[datetime] = None,
     profile_photo: Optional[UploadFile] = File(None),
     license_document: Optional[UploadFile] = File(None),
     vehicle_registration: Optional[UploadFile] = File(None),
 ):
     """Submit verification documents."""
-    from src.guzo.verification.service import VerificationService
     import os
     import uuid
     
@@ -77,7 +91,7 @@ async def submit_verification(
         raise HTTPException(status_code=403, detail="Only drivers can submit verification")
     
     # Create upload directory if it doesn't exist
-    upload_dir = "static/uploads"
+    upload_dir = "uploads"
     os.makedirs(upload_dir, exist_ok=True)
     
     # Save uploaded files
@@ -109,18 +123,9 @@ async def submit_verification(
             content = await vehicle_registration.read()
             f.write(content)
     
-    # Parse license expiry
-    from datetime import datetime
-    expiry = None
-    if license_expiry:
-        try:
-            expiry = datetime.fromisoformat(license_expiry)
-        except ValueError:
-            pass
-    
     data = VerificationSubmit(
         license_number=license_number,
-        license_expiry=expiry,
+        license_expiry=license_expiry,
     )
     
     verification = await VerificationService.submit_verification(
@@ -131,63 +136,89 @@ async def submit_verification(
         vehicle_registration=registration_path,
     )
     
-    return templates.TemplateResponse(
-        "partials/verification_submitted.html",
-        {
-            "request": request,
-            "verification": verification,
-        },
+    return VerificationResponse(
+        id=str(verification.id),
+        driver_id=verification.driver_id,
+        profile_photo=verification.profile_photo,
+        license_document=verification.license_document,
+        license_number=verification.license_number,
+        license_expiry=verification.license_expiry,
+        vehicle_registration=verification.vehicle_registration,
+        status=verification.status,
+        admin_notes=verification.admin_notes,
+        rejection_reason=verification.rejection_reason,
+        submitted_at=verification.submitted_at,
+        reviewed_at=verification.reviewed_at,
     )
 
 
 # ============== Admin Routes ==============
 
-@router.get("/admin/pending", response_class=HTMLResponse)
-async def get_pending_verifications(
-    request: Request,
-    user: User = Depends(get_current_admin),
-):
+@router.get("/admin/pending", response_model=VerificationListResponse)
+async def get_pending_verifications(user: User = Depends(get_current_admin)):
     """Get all pending verifications (admin)."""
     verifications = await VerificationService.get_pending_verifications()
     stats = await VerificationService.get_verification_stats()
     
-    return templates.TemplateResponse(
-        "partials/admin_verifications.html",
-        {
-            "request": request,
-            "verifications": verifications,
-            "stats": stats,
-            "user": user,
-        },
+    return VerificationListResponse(
+        verifications=[
+            VerificationResponse(
+                id=str(v.id),
+                driver_id=v.driver_id,
+                driver_name=getattr(v, 'driver_name', None),
+                driver_email=getattr(v, 'driver_email', None),
+                profile_photo=v.profile_photo,
+                license_document=v.license_document,
+                license_number=v.license_number,
+                license_expiry=v.license_expiry,
+                vehicle_registration=v.vehicle_registration,
+                status=v.status,
+                admin_notes=v.admin_notes,
+                rejection_reason=v.rejection_reason,
+                submitted_at=v.submitted_at,
+                reviewed_at=v.reviewed_at,
+            )
+            for v in verifications
+        ],
+        stats=stats,
     )
 
 
-@router.get("/admin/all", response_class=HTMLResponse)
+@router.get("/admin/all", response_model=VerificationListResponse)
 async def get_all_verifications(
-    request: Request,
     user: User = Depends(get_current_admin),
-    status: Optional[str] = None,
+    status: Optional[VerificationStatus] = None,
 ):
     """Get all verifications with optional filter (admin)."""
-    ver_status = VerificationStatus(status) if status else None
-    verifications = await VerificationService.get_all_verifications(ver_status)
+    verifications = await VerificationService.get_all_verifications(status)
     stats = await VerificationService.get_verification_stats()
     
-    return templates.TemplateResponse(
-        "partials/admin_verifications.html",
-        {
-            "request": request,
-            "verifications": verifications,
-            "stats": stats,
-            "filter_status": status,
-            "user": user,
-        },
+    return VerificationListResponse(
+        verifications=[
+            VerificationResponse(
+                id=str(v.id),
+                driver_id=v.driver_id,
+                driver_name=getattr(v, 'driver_name', None),
+                driver_email=getattr(v, 'driver_email', None),
+                profile_photo=v.profile_photo,
+                license_document=v.license_document,
+                license_number=v.license_number,
+                license_expiry=v.license_expiry,
+                vehicle_registration=v.vehicle_registration,
+                status=v.status,
+                admin_notes=v.admin_notes,
+                rejection_reason=v.rejection_reason,
+                submitted_at=v.submitted_at,
+                reviewed_at=v.reviewed_at,
+            )
+            for v in verifications
+        ],
+        stats=stats,
     )
 
 
-@router.get("/admin/{verification_id}", response_class=HTMLResponse)
+@router.get("/admin/{verification_id}", response_model=VerificationDetailResponse)
 async def get_verification_detail(
-    request: Request,
     verification_id: str,
     user: User = Depends(get_current_admin),
 ):
@@ -199,66 +230,94 @@ async def get_verification_detail(
     
     verification, driver = result
     
-    return templates.TemplateResponse(
-        "partials/verification_detail.html",
-        {
-            "request": request,
-            "verification": verification,
-            "driver": driver,
-            "user": user,
-        },
+    return VerificationDetailResponse(
+        verification=VerificationResponse(
+            id=str(verification.id),
+            driver_id=verification.driver_id,
+            profile_photo=verification.profile_photo,
+            license_document=verification.license_document,
+            license_number=verification.license_number,
+            license_expiry=verification.license_expiry,
+            vehicle_registration=verification.vehicle_registration,
+            status=verification.status,
+            admin_notes=verification.admin_notes,
+            rejection_reason=verification.rejection_reason,
+            submitted_at=verification.submitted_at,
+            reviewed_at=verification.reviewed_at,
+        ),
+        driver_name=driver.full_name if driver else None,
+        driver_email=driver.email if driver else None,
+        driver_phone=driver.phone if driver else None,
     )
 
 
-@router.post("/admin/{verification_id}/approve", response_class=HTMLResponse)
+@router.patch("/admin/{verification_id}/approve", response_model=VerificationResponse)
 async def approve_verification(
-    request: Request,
     verification_id: str,
+    request: ApproveRequest,
     user: User = Depends(get_current_admin),
-    notes: Optional[str] = Form(None),
 ):
-    """Approve a verification (admin)."""
+    """Approve a verification (admin). Uses PATCH as this is a state change."""
     verification = await VerificationService.approve_verification(
         verification_id,
         str(user.id),
-        notes=notes,
+        notes=request.notes,
     )
     
     if not verification:
         raise HTTPException(status_code=404, detail="Verification not found")
     
-    return HTMLResponse(
-        '<span class="badge-apple badge-success">Approved</span>'
+    return VerificationResponse(
+        id=str(verification.id),
+        driver_id=verification.driver_id,
+        profile_photo=verification.profile_photo,
+        license_document=verification.license_document,
+        license_number=verification.license_number,
+        license_expiry=verification.license_expiry,
+        vehicle_registration=verification.vehicle_registration,
+        status=verification.status,
+        admin_notes=verification.admin_notes,
+        rejection_reason=verification.rejection_reason,
+        submitted_at=verification.submitted_at,
+        reviewed_at=verification.reviewed_at,
     )
 
 
-@router.post("/admin/{verification_id}/reject", response_class=HTMLResponse)
+@router.patch("/admin/{verification_id}/reject", response_model=VerificationResponse)
 async def reject_verification(
-    request: Request,
     verification_id: str,
+    request: RejectRequest,
     user: User = Depends(get_current_admin),
-    reason: str = Form(...),
-    notes: Optional[str] = Form(None),
 ):
     """Reject a verification (admin)."""
     verification = await VerificationService.reject_verification(
         verification_id,
         str(user.id),
-        reason=reason,
-        notes=notes,
+        reason=request.reason,
+        notes=request.notes,
     )
     
     if not verification:
         raise HTTPException(status_code=404, detail="Verification not found")
     
-    return HTMLResponse(
-        '<span class="badge-apple badge-error">Rejected</span>'
+    return VerificationResponse(
+        id=str(verification.id),
+        driver_id=verification.driver_id,
+        profile_photo=verification.profile_photo,
+        license_document=verification.license_document,
+        license_number=verification.license_number,
+        license_expiry=verification.license_expiry,
+        vehicle_registration=verification.vehicle_registration,
+        status=verification.status,
+        admin_notes=verification.admin_notes,
+        rejection_reason=verification.rejection_reason,
+        submitted_at=verification.submitted_at,
+        reviewed_at=verification.reviewed_at,
     )
 
 
-@router.post("/admin/{verification_id}/review", response_class=HTMLResponse)
+@router.post("/admin/{verification_id}/review", response_model=VerificationResponse)
 async def start_verification_review(
-    request: Request,
     verification_id: str,
     user: User = Depends(get_current_admin),
 ):
@@ -271,7 +330,17 @@ async def start_verification_review(
     if not verification:
         raise HTTPException(status_code=404, detail="Verification not found")
     
-    return HTMLResponse(
-        '<span class="badge-apple badge-warning">Under Review</span>'
+    return VerificationResponse(
+        id=str(verification.id),
+        driver_id=verification.driver_id,
+        profile_photo=verification.profile_photo,
+        license_document=verification.license_document,
+        license_number=verification.license_number,
+        license_expiry=verification.license_expiry,
+        vehicle_registration=verification.vehicle_registration,
+        status=verification.status,
+        admin_notes=verification.admin_notes,
+        rejection_reason=verification.rejection_reason,
+        submitted_at=verification.submitted_at,
+        reviewed_at=verification.reviewed_at,
     )
-
